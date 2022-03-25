@@ -183,6 +183,14 @@ private:
     }
   }
 
+  void CreateLogicDevice() {
+    VkDeviceQueueCreateInfo queueInfo{};
+    queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueInfo.queueCount = 1;
+
+    VkDeviceCreateInfo deviceInfo{};
+  }
+
   void MainLoop() {
     while (!glfwWindowShouldClose(window_)) {
       glfwPollEvents();
@@ -209,6 +217,7 @@ private:
   GLFWwindow *window_{nullptr};
   VkInstance instance_{nullptr};
   VkPhysicalDevice phy_device_{nullptr};
+  VkDevice device_{nullptr};
 };
 
 
