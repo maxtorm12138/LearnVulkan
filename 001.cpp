@@ -1,3 +1,4 @@
+#include <_types/_uint32_t.h>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -9,6 +10,11 @@
 #include <stdexcept>
 #include <vector>
 #include <iostream>
+#include <set>
+
+const std::string_view red("\033[0;31m");
+const std::string_view reset("\033[0m");
+
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 class HelloVulkanApplication {
@@ -16,6 +22,7 @@ public:
   void Run() {
     InitWindow();
     InitVulkan();
+    PickPhysicalDevice();
     MainLoop();
     CleanUp();
   }  
@@ -28,6 +35,7 @@ private:
   }
 
   void InitVulkan() {
+    CheckLayers();
     CheckExtensions();
     CreateInstance();
   }
@@ -50,7 +58,8 @@ private:
     instanceCreateInfo.pApplicationInfo = &appInfo;
     instanceCreateInfo.enabledExtensionCount = glfwExtenstionCount;
     instanceCreateInfo.ppEnabledExtensionNames = glfwExtenstionsList;
-    instanceCreateInfo.enabledLayerCount = 0;
+    instanceCreateInfo.enabledLayerCount = REQUIRED_LAYERS.size();
+    instanceCreateInfo.ppEnabledLayerNames = REQUIRED_LAYERS.size() > 0 ? REQUIRED_LAYERS.data() : nullptr;
 
     auto res = vkCreateInstance(&instanceCreateInfo, nullptr, &instance_);
     if (res != VK_SUCCESS) {
@@ -64,8 +73,6 @@ private:
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
 
-    const std::string_view red("\033[0;31m");
-    const std::string_view reset("\033[0m");
 
     const char **glfwExtenstionsList;
     uint32_t glfwExtenstionCount;
@@ -85,6 +92,59 @@ private:
       if (std::find_if(availableExtensions.begin(), availableExtensions.end(), [&](const VkExtensionProperties &item) {return strcmp(item.extensionName, glfwExtenstionsList[i]) == 0;}) == availableExtensions.end()) {
         throw std::runtime_error("Unsupported extension"s + glfwExtenstionsList[i]);
       }
+    }
+  }
+
+  void CheckLayers() {
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    std::cout << "available layers:\n";
+    for (const auto &layer: availableLayers) {
+      bool required = std::find_if(REQUIRED_LAYERS.begin(), REQUIRED_LAYERS.end(), [&](const char *layerName) {
+        return strcmp(layerName, layer.layerName) == 0;
+      }) != REQUIRED_LAYERS.end();
+      std::cout << '\t' << (required ? red : "") << layer.layerName << (required ? reset : "") << '\t' << layer.description << '\n';
+    }
+
+    for (auto layerName: REQUIRED_LAYERS) {
+      if (std::find_if(availableLayers.begin(), availableLayers.end(), [&](const VkLayerProperties &item) {
+        return strcmp(item.layerName, layerName);
+      }) == availableLayers.end()) {
+        throw std::runtime_error("Unsupported layer: "s + layerName);
+      }
+    }
+  }
+
+  void PickPhysicalDevice() {
+    uint32_t phyDeviceCount{0};
+    vkEnumeratePhysicalDevices(instance_, &phyDeviceCount, nullptr);
+    if (phyDeviceCount == 0) {
+      throw std::runtime_error("No graphics card found!");
+    }
+
+    auto IsDeviceSuitable = [](VkPhysicalDevice phyDev) {
+      VkPhysicalDeviceProperties phyDeviceProperties;
+      vkGetPhysicalDeviceProperties(phyDev, &phyDeviceProperties);
+      std::cout << "Use graphics card: \n\t[" << phyDeviceProperties.deviceID << "] " << phyDeviceProperties.deviceName << "\n";
+      return true;
+    };
+
+    std::vector<VkPhysicalDevice> physicalDevices(phyDeviceCount);
+    vkEnumeratePhysicalDevices(instance_, &phyDeviceCount, physicalDevices.data());
+
+    for (const auto &physicalDevice : physicalDevices) {
+      if (IsDeviceSuitable(physicalDevice)) {
+        phy_device_ = physicalDevice;
+        break;
+      }
+    }
+
+    if (phy_device_ == nullptr) {
+      throw std::runtime_error("No suitable graphics card!");
     }
 
   }
@@ -107,8 +167,13 @@ private:
 
   static constexpr uint32_t WIDTH = 800;
   static constexpr uint32_t HEIGHT = 600;
+  const std::vector<const char *> REQUIRED_LAYERS {
+    "VK_LAYER_KHRONOS_validation"
+  };
+
   GLFWwindow *window_{nullptr};
   VkInstance instance_{nullptr};
+  VkPhysicalDevice phy_device_{nullptr};
 };
 
 
