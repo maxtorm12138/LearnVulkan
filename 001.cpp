@@ -21,6 +21,9 @@ using namespace std::string_view_literals;
 
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphicsFamily;
+  bool IsComplete() {
+    return graphicsFamily || false;
+  }
 };
 
 
@@ -143,6 +146,9 @@ private:
       for (const auto &queueFamiliy : queueFamilies) {
         if (queueFamiliy.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
           indices.graphicsFamily = i;
+        }
+        if (indices.IsComplete()) {
+          break;
         }
         i++;
       }
