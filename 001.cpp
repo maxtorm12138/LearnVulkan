@@ -11,12 +11,19 @@
 #include <vector>
 #include <iostream>
 #include <set>
+#include <optional>
 
 const std::string_view red("\033[0;31m");
 const std::string_view reset("\033[0m");
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
+
+struct QueueFamilyIndices {
+  std::optional<uint32_t> graphicsFamily;
+};
+
+
 class HelloVulkanApplication {
 public:
   void Run() {
@@ -126,11 +133,33 @@ private:
       throw std::runtime_error("No graphics card found!");
     }
 
-    auto IsDeviceSuitable = [](VkPhysicalDevice phyDev) {
+    auto FindQueueFamilies = [](VkPhysicalDevice phyDev) {
+      QueueFamilyIndices indices;
+      uint32_t queueFamilyCount{0};
+      vkGetPhysicalDeviceQueueFamilyProperties(phyDev, &queueFamilyCount, nullptr);
+      std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+      vkGetPhysicalDeviceQueueFamilyProperties(phyDev, &queueFamilyCount, queueFamilies.data());
+      int i{0};
+      for (const auto &queueFamiliy : queueFamilies) {
+        if (queueFamiliy.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+          indices.graphicsFamily = i;
+        }
+        i++;
+      }
+
+      return indices;
+    };
+
+    auto IsDeviceSuitable = [&](VkPhysicalDevice phyDev) {
       VkPhysicalDeviceProperties phyDeviceProperties;
       vkGetPhysicalDeviceProperties(phyDev, &phyDeviceProperties);
-      std::cout << "Use graphics card: \n\t[" << phyDeviceProperties.deviceID << "] " << phyDeviceProperties.deviceName << "\n";
-      return true;
+      auto families = FindQueueFamilies(phyDev);
+      if (families.graphicsFamily) {
+        std::cout << "Use graphics card: \n\t[" << phyDeviceProperties.deviceID << "] " << phyDeviceProperties.deviceName << "\n";
+        return true;
+      } else {
+        return false;
+      }
     };
 
     std::vector<VkPhysicalDevice> physicalDevices(phyDeviceCount);
@@ -146,7 +175,6 @@ private:
     if (phy_device_ == nullptr) {
       throw std::runtime_error("No suitable graphics card!");
     }
-
   }
 
   void MainLoop() {
@@ -164,6 +192,7 @@ private:
 
     glfwTerminate();
   }
+
 
   static constexpr uint32_t WIDTH = 800;
   static constexpr uint32_t HEIGHT = 600;
