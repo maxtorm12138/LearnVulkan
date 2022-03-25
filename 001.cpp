@@ -1,4 +1,6 @@
+#include <cstring>
 #include <string>
+#include <string_view>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -8,6 +10,7 @@
 #include <vector>
 #include <iostream>
 using namespace std::string_literals;
+using namespace std::string_view_literals;
 class HelloVulkanApplication {
 public:
   void Run() {
@@ -48,7 +51,6 @@ private:
     instanceCreateInfo.enabledExtensionCount = glfwExtenstionCount;
     instanceCreateInfo.ppEnabledExtensionNames = glfwExtenstionsList;
     instanceCreateInfo.enabledLayerCount = 0;
-    instanceCreateInfo.pNext = nullptr;
 
     auto res = vkCreateInstance(&instanceCreateInfo, nullptr, &instance_);
     if (res != VK_SUCCESS) {
@@ -59,20 +61,28 @@ private:
   void CheckExtensions() {
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    std::vector<VkExtensionProperties> avaliableExtensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, avaliableExtensions.data());
-    std::cout << "available extensions:\n";
-    for (const auto &extension: avaliableExtensions) {
-      std::cout << '\t' << extension.extensionName << '\n';
-    }
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+
+    const std::string_view red("\033[0;31m");
+    const std::string_view reset("\033[0m");
 
     const char **glfwExtenstionsList;
     uint32_t glfwExtenstionCount;
     glfwExtenstionsList = glfwGetRequiredInstanceExtensions(&glfwExtenstionCount);
-    std::cout << "required extensions:\n";
+
+
+    std::cout << "available extensions:\n";
+    for (const auto &extension: availableExtensions) {
+      bool required = std::find_if(glfwExtenstionsList, glfwExtenstionsList+glfwExtenstionCount, [&](const char *ext) {
+        return strcmp(ext, extension.extensionName) == 0;
+      }) != glfwExtenstionsList + glfwExtenstionCount;
+      std::cout << '\t' << (required ? red : "") <<extension.extensionName << (required ? reset : "") << '\n';
+    }
+
     for (int i = 0; i < glfwExtenstionCount; i++) {
       std::cout << '\t' << glfwExtenstionsList[i] << "\n";
-      if (std::find_if(avaliableExtensions.begin(), avaliableExtensions.end(), [&](const VkExtensionProperties &item) {return strcmp(item.extensionName, glfwExtenstionsList[i]) == 0;}) == avaliableExtensions.end()) {
+      if (std::find_if(availableExtensions.begin(), availableExtensions.end(), [&](const VkExtensionProperties &item) {return strcmp(item.extensionName, glfwExtenstionsList[i]) == 0;}) == availableExtensions.end()) {
         throw std::runtime_error("Unsupported extension"s + glfwExtenstionsList[i]);
       }
     }
