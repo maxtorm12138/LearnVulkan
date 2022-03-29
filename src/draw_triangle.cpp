@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -23,6 +24,12 @@ using namespace std::string_view_literals;
     throw std::runtime_error(boost::str(boost::format("%s %d %s %s %d") % __FILE__ % __LINE__ % funcion % msg % ret));\
   }
 
+static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+  std::cerr << boost::format("%s") % pCallbackData->pMessage << std::endl;
+  return VK_FALSE;
+}
+
+
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphicsFamily;
   bool IsComplete() {
@@ -36,7 +43,6 @@ public:
   void Run() {
     InitWindow();
     InitVulkan();
-    PickPhysicalDevice();
     MainLoop();
     CleanUp();
   }  
@@ -50,6 +56,8 @@ private:
 
   void InitVulkan() {
     CreateInstance();
+    SetUpDebugMessenger();
+    PickPhysicalDevice();
   }
 
   void CreateInstance() {
@@ -120,61 +128,27 @@ private:
     instanceCreateInfo.ppEnabledLayerNames = enable_layers.data();
 
     instance_ = std::make_shared<lvk::util::InstanceWrapper>(instanceCreateInfo);
+  } 
+
+  void SetUpDebugMessenger() {
+    VkDebugUtilsMessengerCreateInfoEXT debugInfo{};
+    debugInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debugInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    debugInfo.pfnUserCallback = &DebugCallback;
+    debugInfo.pUserData = nullptr; // Optional
+    debug_messenger_ = std::make_shared<lvk::util::DebugMessengerWrapper>(instance_, debugInfo);
   }
 
-
   void PickPhysicalDevice() {
-    uint32_t phyDeviceCount{0};
-    vkEnumeratePhysicalDevices(instance_, &phyDeviceCount, nullptr);
-    if (phyDeviceCount == 0) {
-      throw std::runtime_error("No graphics card found!");
-    }
-
-    auto FindQueueFamilies = [](VkPhysicalDevice phyDev) {
-      QueueFamilyIndices indices;
-      uint32_t queueFamilyCount{0};
-      vkGetPhysicalDeviceQueueFamilyProperties(phyDev, &queueFamilyCount, nullptr);
-      std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-      vkGetPhysicalDeviceQueueFamilyProperties(phyDev, &queueFamilyCount, queueFamilies.data());
-      int i{0};
-      for (const auto &queueFamiliy : queueFamilies) {
-        if (queueFamiliy.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-          indices.graphicsFamily = i;
-        }
-        if (indices.IsComplete()) {
-          break;
-        }
-        i++;
-      }
-
-      return indices;
-    };
-
-    auto IsDeviceSuitable = [&](VkPhysicalDevice phyDev) {
+    auto IsDeviceSuitable = [](VkPhysicalDevice phyDev) {
       VkPhysicalDeviceProperties phyDeviceProperties;
       vkGetPhysicalDeviceProperties(phyDev, &phyDeviceProperties);
-      auto families = FindQueueFamilies(phyDev);
-      if (families.graphicsFamily) {
-        std::cout << "Use graphics card: \n\t[" << phyDeviceProperties.deviceID << "] " << phyDeviceProperties.deviceName << "\n";
-        return true;
-      } else {
-        return false;
-      }
+      return true;
     };
 
-    std::vector<VkPhysicalDevice> physicalDevices(phyDeviceCount);
-    vkEnumeratePhysicalDevices(instance_, &phyDeviceCount, physicalDevices.data());
+    physical_device_ = std::make_shared<lvk::util::PhysicalDeviceEnumerator>(instance_, IsDeviceSuitable);
 
-    for (const auto &physicalDevice : physicalDevices) {
-      if (IsDeviceSuitable(physicalDevice)) {
-        phy_device_ = physicalDevice;
-        break;
-      }
-    }
-
-    if (phy_device_ == nullptr) {
-      throw std::runtime_error("No suitable graphics card!");
-    }
   }
 
   void CreateLogicDevice() {
@@ -212,7 +186,9 @@ private:
 
   GLFWwindow *window_{nullptr};
   std::shared_ptr<lvk::util::InstanceWrapper> instance_;
-  VkPhysicalDevice phy_device_{nullptr};
+  std::shared_ptr<lvk::util::DebugMessengerWrapper> debug_messenger_;
+  std::shared_ptr<lvk::util::PhysicalDeviceEnumerator> physical_device_;
+
   VkDevice device_{nullptr};
 };
 
