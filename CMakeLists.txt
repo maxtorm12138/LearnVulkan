@@ -15,13 +15,19 @@ find_package(glm REQUIRED FATAL_ERROR)
 
 # include vulkan
 find_package(Vulkan REQUIRED FATAL_ERROR)
-message("Vulkan: ${Vulkan_LIBRARIES}")
 
 # include boost
 find_package(Boost REQUIRED)
 
+# includ vulkan hpp
+if (DEFINED ENV{VULKAN_HPP_DIR})
+  set(VULKAN_HPP_INCLUDE_DIR $ENV{VULKAN_HPP_DIR})
+else()
+  message(FATAL_ERROR  "VULKAN_HPP_DIR NOT SET")
+endif()
+
 # third party include and link
-list(APPEND LEARN_VULKAN_COMMON_INCLUDE_DIRS ${GLM_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+list(APPEND LEARN_VULKAN_COMMON_INCLUDE_DIRS ${GLM_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR})
 list(APPEND LEANN_VULKAN_COMMON_LINK_LIBRARYIES  Vulkan::Vulkan glfw ${GLFW_LIBRARIES} glm::glm)
 
 # self util
