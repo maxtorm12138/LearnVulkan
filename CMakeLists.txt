@@ -20,14 +20,16 @@ message("Vulkan: ${Vulkan_LIBRARIES}")
 # include boost
 find_package(Boost REQUIRED)
 
-list(APPEND LEARN_VULKAN_COMMON_INCLUDE_DIRS ${GLM_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS})
+# third party include and link
+list(APPEND LEARN_VULKAN_COMMON_INCLUDE_DIRS ${GLM_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 list(APPEND LEANN_VULKAN_COMMON_LINK_LIBRARYIES  Vulkan::Vulkan glfw ${GLFW_LIBRARIES} glm::glm)
 
-add_executable(Vulkan000 000.cpp)
-target_include_directories(Vulkan000 PUBLIC ${LEARN_VULKAN_COMMON_INCLUDE_DIRS})
-target_link_libraries(Vulkan000 ${LEANN_VULKAN_COMMON_LINK_LIBRARYIES})
+# self util
+add_library(LearnVulkanUtil include/util/wrapper.hpp src/util/wrapper.cpp)
+target_include_directories(LearnVulkanUtil PUBLIC ${LEARN_VULKAN_COMMON_INCLUDE_DIRS} include/)
+target_link_libraries(LearnVulkanUtil ${LEANN_VULKAN_COMMON_LINK_LIBRARYIES})
 
 
-add_executable(Vulkan001 001.cpp)
-target_include_directories(Vulkan001 PUBLIC ${LEARN_VULKAN_COMMON_INCLUDE_DIRS})
-target_link_libraries(Vulkan001 ${LEANN_VULKAN_COMMON_LINK_LIBRARYIES})
+add_executable(LearnVulkanDrawTriangle src/draw_triangle.cpp)
+target_include_directories(LearnVulkanDrawTriangle PUBLIC ${LEARN_VULKAN_COMMON_INCLUDE_DIRS} include/)
+target_link_libraries(LearnVulkanDrawTriangle ${LEANN_VULKAN_COMMON_LINK_LIBRARYIES} LearnVulkanUtil)

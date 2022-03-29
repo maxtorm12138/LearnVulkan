@@ -1,5 +1,5 @@
-#include <_types/_uint32_t.h>
-#include <cstring>
+#include <iterator>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vulkan/vulkan_core.h>
@@ -12,12 +12,16 @@
 #include <iostream>
 #include <set>
 #include <optional>
-
-const std::string_view red("\033[0;31m");
-const std::string_view reset("\033[0m");
+#include "util/wrapper.hpp"
+#include <boost/format.hpp>
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
+
+#define RES_THROW(funcion, msg, ret) \
+  if (ret != VK_SUCCESS) { \
+    throw std::runtime_error(boost::str(boost::format("%s %d %s %s %d") % __FILE__ % __LINE__ % funcion % msg % ret));\
+  }
 
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphicsFamily;
@@ -45,12 +49,60 @@ private:
   }
 
   void InitVulkan() {
-    CheckLayers();
-    CheckExtensions();
     CreateInstance();
   }
 
   void CreateInstance() {
+    // check layers
+    std::vector<const char *> enable_layers;
+    {
+      uint32_t layer_count;
+      auto ret = vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+      RES_THROW("vkEnumerateInstanceLayerProperties", "fail", ret)
+      std::vector<VkLayerProperties> layer_props(layer_count);
+      ret = vkEnumerateInstanceLayerProperties(&layer_count, layer_props.data());
+      RES_THROW("vkEnumerateInstanceLayerProperties", "fail", ret)
+
+      for (auto requried_layer_name : REQUIRED_LAYERS) {
+        bool found = std::find_if(layer_props.begin(), layer_props.end(), [requried_layer_name](const VkLayerProperties &layer_prop) {
+          return layer_prop.layerName == std::string_view(requried_layer_name);
+        }) != layer_props.end();
+        if (!found) {
+          throw std::runtime_error(boost::str(boost::format("Requried layer %s not found") % requried_layer_name));
+        }
+      }
+      enable_layers = REQUIRED_LAYERS;
+    }
+
+    // check instance extensions
+    std::vector<const char *> enable_extensions;
+    {
+      uint32_t extension_count = 0;
+      auto ret = vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
+      RES_THROW("vkEnumerateInstanceExtensionProperties", "fail", ret)
+      std::vector<VkExtensionProperties> extensions(extension_count);
+      ret = vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extensions.data());
+      RES_THROW("vkEnumerateInstanceExtensionProperties", "fail", ret)
+
+      uint32_t glfw_required_extension_count{0};
+      const char **glfw_requried_extensions{nullptr};
+      glfw_requried_extensions = glfwGetRequiredInstanceExtensions(&glfw_required_extension_count);     
+
+      std::vector<const char *> required_extensions = REQUIRED_EXTENSIONS;
+      std::copy(glfw_requried_extensions, glfw_requried_extensions + glfw_required_extension_count, std::back_inserter(required_extensions));
+
+      for (auto required_extension_name : required_extensions) {
+        bool found = std::find_if(extensions.begin(), extensions.end(), [required_extension_name](const VkExtensionProperties &extension_prop) {
+          return extension_prop.extensionName == std::string_view(required_extension_name);
+        }) != extensions.end();
+        if (!found) {
+          throw std::runtime_error(boost::str(boost::format("Requried extensions %s not found") % required_extension_name));
+        }
+      }
+      enable_extensions = required_extensions;
+    }
+
+
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Hello Vulkan";
@@ -59,75 +111,17 @@ private:
     appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);
     appInfo.apiVersion = VK_API_VERSION_1_0;
 
-    const char **glfwExtenstionsList;
-    uint32_t glfwExtenstionCount;
-    glfwExtenstionsList = glfwGetRequiredInstanceExtensions(&glfwExtenstionCount);
-
     VkInstanceCreateInfo  instanceCreateInfo{};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &appInfo;
-    instanceCreateInfo.enabledExtensionCount = glfwExtenstionCount;
-    instanceCreateInfo.ppEnabledExtensionNames = glfwExtenstionsList;
-    instanceCreateInfo.enabledLayerCount = REQUIRED_LAYERS.size();
-    instanceCreateInfo.ppEnabledLayerNames = REQUIRED_LAYERS.size() > 0 ? REQUIRED_LAYERS.data() : nullptr;
+    instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(enable_extensions.size());
+    instanceCreateInfo.ppEnabledExtensionNames = enable_extensions.data();
+    instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(enable_layers.size());
+    instanceCreateInfo.ppEnabledLayerNames = enable_layers.data();
 
-    auto res = vkCreateInstance(&instanceCreateInfo, nullptr, &instance_);
-    if (res != VK_SUCCESS) {
-      throw std::runtime_error("failed to create instance! res="+std::to_string(res));
-    }
+    instance_ = std::make_shared<lvk::util::InstanceWrapper>(instanceCreateInfo);
   }
 
-  void CheckExtensions() {
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
-
-
-    const char **glfwExtenstionsList;
-    uint32_t glfwExtenstionCount;
-    glfwExtenstionsList = glfwGetRequiredInstanceExtensions(&glfwExtenstionCount);
-
-
-    std::cout << "available extensions:\n";
-    for (const auto &extension: availableExtensions) {
-      bool required = std::find_if(glfwExtenstionsList, glfwExtenstionsList+glfwExtenstionCount, [&](const char *ext) {
-        return strcmp(ext, extension.extensionName) == 0;
-      }) != glfwExtenstionsList + glfwExtenstionCount;
-      std::cout << '\t' << (required ? red : "") <<extension.extensionName << (required ? reset : "") << '\n';
-    }
-
-    for (int i = 0; i < glfwExtenstionCount; i++) {
-      std::cout << '\t' << glfwExtenstionsList[i] << "\n";
-      if (std::find_if(availableExtensions.begin(), availableExtensions.end(), [&](const VkExtensionProperties &item) {return strcmp(item.extensionName, glfwExtenstionsList[i]) == 0;}) == availableExtensions.end()) {
-        throw std::runtime_error("Unsupported extension"s + glfwExtenstionsList[i]);
-      }
-    }
-  }
-
-  void CheckLayers() {
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    std::cout << "available layers:\n";
-    for (const auto &layer: availableLayers) {
-      bool required = std::find_if(REQUIRED_LAYERS.begin(), REQUIRED_LAYERS.end(), [&](const char *layerName) {
-        return strcmp(layerName, layer.layerName) == 0;
-      }) != REQUIRED_LAYERS.end();
-      std::cout << '\t' << (required ? red : "") << layer.layerName << (required ? reset : "") << '\t' << layer.description << '\n';
-    }
-
-    for (auto layerName: REQUIRED_LAYERS) {
-      if (std::find_if(availableLayers.begin(), availableLayers.end(), [&](const VkLayerProperties &item) {
-        return strcmp(item.layerName, layerName);
-      }) == availableLayers.end()) {
-        throw std::runtime_error("Unsupported layer: "s + layerName);
-      }
-    }
-  }
 
   void PickPhysicalDevice() {
     uint32_t phyDeviceCount{0};
@@ -198,8 +192,6 @@ private:
   }
 
   void CleanUp() {
-    vkDestroyInstance(instance_, nullptr);
-    instance_ = nullptr;
 
     glfwDestroyWindow(window_);
     window_ = nullptr;
@@ -214,8 +206,12 @@ private:
     "VK_LAYER_KHRONOS_validation"
   };
 
+  const std::vector<const char *> REQUIRED_EXTENSIONS {
+    VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+  };
+
   GLFWwindow *window_{nullptr};
-  VkInstance instance_{nullptr};
+  std::shared_ptr<lvk::util::InstanceWrapper> instance_;
   VkPhysicalDevice phy_device_{nullptr};
   VkDevice device_{nullptr};
 };
