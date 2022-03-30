@@ -11,6 +11,9 @@
 #include <boost/noncopyable.hpp>
 #include <boost/format.hpp>
 
+// glog
+#include <glog/logging.h>
+
 // std
 #include <memory>
 #include <vector>
@@ -19,23 +22,27 @@
 #include <optional>
 #include <iostream>
 #include <stdexcept>
+#include <set>
 
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
   std::optional<uint32_t> present_family;
   explicit operator bool() {
-    return graphics_family.has_value();
+    return graphics_family.has_value() && present_family.has_value();
   }
 
-  QueueFamilyIndices(const std::vector<vk::QueueFamilyProperties> &queue_families) {
+  QueueFamilyIndices(const vk::raii::PhysicalDevice &physical_device, const vk::raii::SurfaceKHR &surface) {
     int i = 0;
-    for (const auto &queue_family: queue_families) {
+    for (const auto &queue_family: physical_device.getQueueFamilyProperties()) {
       if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics) {
         graphics_family = i;
       }
 
-      if (vkPresent)
-      if (this->operator bool()) {
+      if (physical_device.getSurfaceSupportKHR(i, *surface)) {
+        present_family = i;
+      }
+
+      if (*this) {
         break;
       }
       i++;
@@ -46,19 +53,35 @@ struct QueueFamilyIndices {
 };
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-  std::cerr << boost::format("%s") % pCallbackData->pMessage << std::endl;
+  switch (messageSeverity) {
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+      LOG(INFO) << pCallbackData->pMessage;
+      break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+      LOG(INFO) << pCallbackData->pMessage;
+    break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+      LOG(WARNING) << pCallbackData->pMessage;
+    break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+      LOG(ERROR) << pCallbackData->pMessage;
+    break;
+    default:
+      LOG(FATAL) << pCallbackData->pMessage;
+    break;
+  }
   return VK_FALSE;
 }
 
 class HelloVulkanApplication : public boost::noncopyable {
 public:
   HelloVulkanApplication() {
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    window_ = glfwCreateWindow(WIDTH, HEIGHT, "Hello Vulkan", nullptr, nullptr);
+    ConstructWindow();
     ConstructInstance();
     ConstructDebugMessenger();
+    ConstructSurface();
     ConstructPhysicalDevice();
+    ConstructLogicalDevice();
   }
 
   ~HelloVulkanApplication() {
@@ -72,6 +95,12 @@ public:
     }
   };
 private:
+
+  void ConstructWindow() {
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    window_ = glfwCreateWindow(WIDTH, HEIGHT, "Hello Vulkan", nullptr, nullptr);
+  }
 
   void ConstructInstance() {
     std::vector<const char *> enable_layers;
@@ -124,16 +153,26 @@ private:
 
   void ConstructDebugMessenger() {
 #ifndef NDEBUG
-    vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+    vk::DebugUtilsMessageSeverityFlagsEXT severity = /*vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |*/ vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
     vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
     vk::DebugUtilsMessengerCreateInfoEXT create_info({}, severity, type, &DebugCallback);
     debug_messenger_ = std::make_unique<vk::raii::DebugUtilsMessengerEXT>(*instance_, create_info);
 #endif // !NDEBUG
   }
 
+  void ConstructSurface() {
+    VkSurfaceKHR surface;
+    auto ret = glfwCreateWindowSurface(**instance_, window_, nullptr, &surface);
+    if (ret != VK_SUCCESS) {
+      throw std::runtime_error(boost::str(boost::format("glfwCreateWindowSurface ret=%d") % ret));
+    }
+
+    window_surface_ = std::make_unique<vk::raii::SurfaceKHR>(*instance_, surface);
+  }
+
   void ConstructPhysicalDevice() {
     auto physical_devices = instance_->enumeratePhysicalDevices();
-    auto SuitablePhysicalDevice = [](const vk::raii::PhysicalDevice &physical_device) {
+    auto SuitablePhysicalDevice = [this](const vk::raii::PhysicalDevice &physical_device) {
       auto properties = physical_device.getProperties();
       auto features = physical_device.getFeatures();
       if (properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu) {
@@ -143,8 +182,8 @@ private:
       if (!features.tessellationShader) {
         return false;
       }
-      auto queue_families = physical_device.getQueueFamilyProperties();
-      QueueFamilyIndices indices(queue_families);
+
+      QueueFamilyIndices indices(physical_device, *window_surface_);
       return (bool)indices;
     };
 
@@ -158,7 +197,28 @@ private:
       throw std::runtime_error("no suitable physical device found");
     }
 
-    queue_family_indices_ = QueueFamilyIndices(physical_device_->getQueueFamilyProperties());
+    queue_family_indices_ = QueueFamilyIndices(*physical_device_, *window_surface_);
+  }
+
+  void ConstructLogicalDevice() {
+    float queue_priority = 1.0f;
+    std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
+    std::set<uint32_t> unique_queue_families {
+      *queue_family_indices_.graphics_family,
+      *queue_family_indices_.present_family
+    };
+
+    for (auto queue_family : unique_queue_families) {
+      vk::DeviceQueueCreateInfo queue_create_info({}, queue_family, 1, &queue_priority);
+      queue_create_infos.emplace_back(std::move(queue_create_info));
+    }
+
+
+    vk::PhysicalDeviceFeatures physical_device_features;
+    vk::DeviceCreateInfo device_create_info({}, queue_create_infos.size(), queue_create_infos.data(), {}, {}, {}, {}, &physical_device_features);
+    device_ = std::make_unique<vk::raii::Device>(*physical_device_, device_create_info);
+    graphics_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(*queue_family_indices_.graphics_family, 0));
+    present_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(*queue_family_indices_.present_family, 0));
   }
 
 private:
@@ -186,13 +246,17 @@ private:
   vk::raii::Context context_;
   std::unique_ptr<vk::raii::Instance> instance_;
   std::unique_ptr<vk::raii::DebugUtilsMessengerEXT> debug_messenger_;
+  std::unique_ptr<vk::raii::SurfaceKHR> window_surface_;
   std::unique_ptr<vk::raii::PhysicalDevice> physical_device_;
   QueueFamilyIndices queue_family_indices_;
   std::unique_ptr<vk::raii::Device> device_;
-  std::unique_ptr<vk::raii::SurfaceKHR> window_surface_;
+  std::unique_ptr<vk::raii::Queue> graphics_queue_;
+  std::unique_ptr<vk::raii::Queue> present_queue_;
 };
 
-int main(int, char **) {
+int main(int, char *argv[0]) {
+  google::InitGoogleLogging(argv[0]);
+  FLAGS_logtostderr = 1;
   glfwInit();
   try {
     HelloVulkanApplication app;
