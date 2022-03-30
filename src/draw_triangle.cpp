@@ -53,22 +53,33 @@ struct QueueFamilyIndices {
 };
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+  std::string type;
+  if (messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
+    type = "GENERAL";
+  } else if (messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
+    type = "PERFORMANCE";
+  } else if (messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
+    type = "VALIDATION";
+  } else {
+    type = "NONE";
+  }
+
   switch (messageSeverity) {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-      LOG(INFO) << pCallbackData->pMessage;
+      LOG(INFO) << " [" << type << "] " << pCallbackData->pMessage;
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-      LOG(INFO) << pCallbackData->pMessage;
-    break;
+      LOG(INFO) << " [" << type << "] " << pCallbackData->pMessage;
+      break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-      LOG(WARNING) << pCallbackData->pMessage;
-    break;
+      LOG(WARNING) << " [" << type << "] " << pCallbackData->pMessage;
+      break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-      LOG(ERROR) << pCallbackData->pMessage;
-    break;
+      LOG(ERROR) << " [" << type << "] " << pCallbackData->pMessage;
+      break;
     default:
-      LOG(FATAL) << pCallbackData->pMessage;
-    break;
+      LOG(FATAL) << " [" << type << "] " << pCallbackData->pMessage;
+      break;
   }
   return VK_FALSE;
 }
@@ -144,10 +155,34 @@ private:
         }
       }
       enable_extensions = required_extensions;
+
+      for (auto available_extension : available_extensions) {
+        if (available_extension.extensionName == EXT_NAME_VK_KHR_get_physical_device_properties2) {
+          enable_extensions.push_back(EXT_NAME_VK_KHR_get_physical_device_properties2.data());
+          break;
+        }
+      }
     }
 
+#ifndef NDEBUG
+    vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain;
+    auto &create_info = chain.get<vk::InstanceCreateInfo>();
+    auto &debug_info = chain.get<vk::DebugUtilsMessengerCreateInfoEXT>();
+    vk::DebugUtilsMessageSeverityFlagsEXT severity = /*vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |*/ vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+    vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
+    vk::DebugUtilsMessengerCreateInfoEXT debug_info1({}, severity, type, &DebugCallback);
+    debug_info = debug_info1;
+#else // !NDEBUG
+    vk::InstanceCreateInfo create_info;
+#endif
+
     vk::ApplicationInfo app_info("Hello vulkan", VK_MAKE_VERSION(0, 1, 0), "No Engine", VK_MAKE_VERSION(0, 1, 0), VK_API_VERSION_1_0);
-    vk::InstanceCreateInfo create_info({}, &app_info, enable_layers.size(), enable_layers.data(), enable_extensions.size(), enable_extensions.data());
+    create_info.pApplicationInfo = &app_info;
+    create_info.enabledLayerCount = enable_layers.size();
+    create_info.ppEnabledLayerNames = enable_layers.data();
+    create_info.enabledExtensionCount = enable_extensions.size();
+    create_info.ppEnabledExtensionNames = enable_extensions.data();
+
     instance_ = std::make_unique<vk::raii::Instance>(context_, create_info);
   }
 
@@ -183,6 +218,20 @@ private:
         return false;
       }
 
+      auto physical_device_extensions = physical_device.enumerateDeviceExtensionProperties();
+      for (auto required_device_extension : REQUIRED_DEVICE_EXTENSIONS) {
+        bool exists = false;
+        for (const auto &physical_device_extension : physical_device_extensions) {
+          if (physical_device_extension.extensionName == std::string_view(required_device_extension)) {
+            exists = true;
+          }
+        }
+
+        if (!exists) {
+          return false;
+        }
+      }
+
       QueueFamilyIndices indices(physical_device, *window_surface_);
       return (bool)indices;
     };
@@ -213,9 +262,21 @@ private:
       queue_create_infos.emplace_back(std::move(queue_create_info));
     }
 
+    std::vector<const char *> enable_device_extensions;
+    {
+      enable_device_extensions = REQUIRED_DEVICE_EXTENSIONS;
+      // VUID-VkDeviceCreateInfo-pProperties-04451
+      auto available_device_extensions = physical_device_->enumerateDeviceExtensionProperties();
+      for (const auto &available_device_extension : available_device_extensions) {
+        if (available_device_extension.extensionName == EXT_NAME_VK_KHR_portability_subset) {
+          enable_device_extensions.push_back(EXT_NAME_VK_KHR_portability_subset.data());
+          break;
+        }
+      }
+    }
 
     vk::PhysicalDeviceFeatures physical_device_features;
-    vk::DeviceCreateInfo device_create_info({}, queue_create_infos.size(), queue_create_infos.data(), {}, {}, {}, {}, &physical_device_features);
+    vk::DeviceCreateInfo device_create_info({}, queue_create_infos.size(), queue_create_infos.data(), {}, {}, enable_device_extensions.size(), enable_device_extensions.data(), &physical_device_features);
     device_ = std::make_unique<vk::raii::Device>(*physical_device_, device_create_info);
     graphics_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(*queue_family_indices_.graphics_family, 0));
     present_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(*queue_family_indices_.present_family, 0));
@@ -224,23 +285,27 @@ private:
 private:
   const std::vector<const char *> REQUIRED_LAYERS {
 #ifndef NDEBUG
-    "VK_LAYER_KHRONOS_validation"
+    LAYER_NAME_VK_LAYER_KHRONOS_validation.data()
 #endif // !NDEBUG
   };
 
   const std::vector<const char *> REQUIRED_EXTENSIONS {
 #ifndef NDEBUG
-    VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+    EXT_NAME_VK_EXT_debug_utils.data()
 #endif // !NDEBUG
   };
 
   const std::vector<const char *> REQUIRED_DEVICE_EXTENSIONS {
-
+    EXT_NAME_VK_KHR_swapchain.data()
   };
 
   static constexpr uint32_t WIDTH = 800;
   static constexpr uint32_t HEIGHT = 600;
-
+  static constexpr std::string_view EXT_NAME_VK_KHR_portability_subset = "VK_KHR_portability_subset";
+  static constexpr std::string_view EXT_NAME_VK_KHR_get_physical_device_properties2 = VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME;
+  static constexpr std::string_view EXT_NAME_VK_EXT_debug_utils = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+  static constexpr std::string_view LAYER_NAME_VK_LAYER_KHRONOS_validation = "VK_LAYER_KHRONOS_validation";
+  static constexpr std::string_view EXT_NAME_VK_KHR_swapchain = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 private:
   GLFWwindow *window_;
   vk::raii::Context context_;
