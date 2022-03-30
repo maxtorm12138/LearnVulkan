@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.23.0)
 project(LearnVulkan VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 17)
 # include glfw
@@ -16,10 +16,7 @@ find_package(glm REQUIRED FATAL_ERROR)
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
 # include boost
-find_package(Boost REQUIRED)
-
-# include glog
-find_package(glog REQUIRED FATAL_ERROR)
+find_package(Boost REQUIRED COMPONENTS log)
 
 # includ vulkan hpp
 if (DEFINED ENV{VULKAN_HPP_DIR})
@@ -29,10 +26,11 @@ else()
 endif()
 
 # third party include and link
-list(APPEND LEARN_VULKAN_COMMON_INCLUDE_DIRS ${GLM_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} ${GLOG_INCLUDE_DIR})
-list(APPEND LEANN_VULKAN_COMMON_LINK_LIBRARYIES  Vulkan::Vulkan glfw ${GLFW_LIBRARIES} glm::glm glog::glog)
+list(APPEND LEARN_VULKAN_COMMON_INCLUDE_DIRS ${GLM_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS}  ${VULKAN_HPP_INCLUDE_DIR})
+list(APPEND LEANN_VULKAN_COMMON_LINK_LIBRARYIES  Vulkan::Vulkan glfw ${GLFW_LIBRARIES} glm::glm Boost::log Boost::boost)
 
 
 add_executable(LearnVulkanDrawTriangle src/draw_triangle.cpp)
 target_include_directories(LearnVulkanDrawTriangle PUBLIC ${LEARN_VULKAN_COMMON_INCLUDE_DIRS} include/)
-target_link_libraries(LearnVulkanDrawTriangle ${LEANN_VULKAN_COMMON_LINK_LIBRARYIES} )
+target_link_libraries(LearnVulkanDrawTriangle ${LEANN_VULKAN_COMMON_LINK_LIBRARYIES})
+

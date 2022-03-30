@@ -10,9 +10,8 @@
 // boost
 #include <boost/noncopyable.hpp>
 #include <boost/format.hpp>
+#include <boost/log/trivial.hpp>
 
-// glog
-#include <glog/logging.h>
 
 // std
 #include <memory>
@@ -67,6 +66,7 @@ struct SwapChainSupportDetails {
 };
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+  using boost::log::trivial::severity_level;
   std::string type;
   if (messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
     type = "GENERAL";
@@ -80,19 +80,19 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
 
   switch (messageSeverity) {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-      LOG(INFO) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(debug) << " [" << type << "] " << pCallbackData->pMessage;
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-      LOG(INFO) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(info) << " [" << type << "] " << pCallbackData->pMessage;
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-      LOG(WARNING) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(warning) << " [" << type << "] " << pCallbackData->pMessage;
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-      LOG(ERROR) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(error) << " [" << type << "] " << pCallbackData->pMessage;
       break;
     default:
-      LOG(FATAL) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(fatal) << " [" << type << "] " << pCallbackData->pMessage;
       break;
   }
   return VK_FALSE;
@@ -335,8 +335,6 @@ private:
 };
 
 int main(int, char *argv[0]) {
-  google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
   glfwInit();
   try {
     HelloVulkanApplication app;
