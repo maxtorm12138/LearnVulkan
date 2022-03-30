@@ -52,6 +52,20 @@ struct QueueFamilyIndices {
   QueueFamilyIndices() = default;
 };
 
+struct SwapChainSupportDetails {
+  vk::SurfaceCapabilitiesKHR surface_capabilities;
+  std::vector<vk::SurfaceFormatKHR> surface_formats;
+  std::vector<vk::PresentModeKHR> present_modes;
+
+  SwapChainSupportDetails(const vk::raii::PhysicalDevice &physical_device, const vk::raii::SurfaceKHR &surface) {
+    surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(*surface);
+    surface_formats = physical_device.getSurfaceFormatsKHR(*surface);
+    present_modes = physical_device.getSurfacePresentModesKHR(*surface);
+  }
+
+  SwapChainSupportDetails() = default;
+};
+
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
   std::string type;
   if (messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
@@ -317,6 +331,7 @@ private:
   std::unique_ptr<vk::raii::Device> device_;
   std::unique_ptr<vk::raii::Queue> graphics_queue_;
   std::unique_ptr<vk::raii::Queue> present_queue_;
+  std::unique_ptr<vk::raii::SwapchainKHR> swap_chain_;
 };
 
 int main(int, char *argv[0]) {
