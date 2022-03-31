@@ -10,6 +10,8 @@
 // boost
 #include <boost/noncopyable.hpp>
 #include <boost/format.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
 #include <boost/log/trivial.hpp>
 
 
@@ -80,19 +82,19 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
 
   switch (messageSeverity) {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-      BOOST_LOG_TRIVIAL(debug) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(debug) << type << "\t" << pCallbackData->pMessage;
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-      BOOST_LOG_TRIVIAL(info) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(info) << type << "\t" << pCallbackData->pMessage;
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-      BOOST_LOG_TRIVIAL(warning) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(warning) << type << "\t" << pCallbackData->pMessage;
       break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-      BOOST_LOG_TRIVIAL(error) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(error) << type << "\t" << pCallbackData->pMessage;
       break;
     default:
-      BOOST_LOG_TRIVIAL(fatal) << " [" << type << "] " << pCallbackData->pMessage;
+      BOOST_LOG_TRIVIAL(fatal) << type << "\t" << pCallbackData->pMessage;
       break;
   }
   return VK_FALSE;
@@ -182,7 +184,7 @@ private:
     vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain;
     auto &create_info = chain.get<vk::InstanceCreateInfo>();
     auto &debug_info = chain.get<vk::DebugUtilsMessengerCreateInfoEXT>();
-    vk::DebugUtilsMessageSeverityFlagsEXT severity = /*vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |*/ vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+    vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
     vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
     vk::DebugUtilsMessengerCreateInfoEXT debug_info1({}, severity, type, &DebugCallback);
     debug_info = debug_info1;
@@ -202,7 +204,7 @@ private:
 
   void ConstructDebugMessenger() {
 #ifndef NDEBUG
-    vk::DebugUtilsMessageSeverityFlagsEXT severity = /*vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |*/ vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+    vk::DebugUtilsMessageSeverityFlagsEXT severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
     vk::DebugUtilsMessageTypeFlagsEXT type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
     vk::DebugUtilsMessengerCreateInfoEXT create_info({}, severity, type, &DebugCallback);
     debug_messenger_ = std::make_unique<vk::raii::DebugUtilsMessengerEXT>(*instance_, create_info);
@@ -247,7 +249,16 @@ private:
       }
 
       QueueFamilyIndices indices(physical_device, *window_surface_);
-      return (bool)indices;
+      if (!indices) {
+        return false;
+      }
+
+      SwapChainSupportDetails swap_chain_support(physical_device, *window_surface_);
+      if (swap_chain_support.surface_formats.empty() || swap_chain_support.present_modes.empty())  {
+        return false;
+      }
+
+      return true;
     };
 
     for (auto &physical_device: physical_devices) {
@@ -334,7 +345,12 @@ private:
   std::unique_ptr<vk::raii::SwapchainKHR> swap_chain_;
 };
 
+void init_log() {
+  boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::info);
+}
+
 int main(int, char *argv[0]) {
+  init_log();
   glfwInit();
   try {
     HelloVulkanApplication app;
