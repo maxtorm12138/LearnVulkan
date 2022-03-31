@@ -142,6 +142,7 @@ public:
     ConstructPhysicalDevice();
     ConstructLogicalDevice();
     ConstructSwapChain();
+    ConstructImageViews();
   }
 
   ~HelloVulkanApplication() {
@@ -341,13 +342,13 @@ private:
   }
 
   void ConstructSwapChain() {
-    SwapChainSupportDetails swap_chain_support(*physical_device_, *window_surface_);
-    auto surface_format = swap_chain_support.ChooseSurfaceFormat();
-    auto present_mode = swap_chain_support.ChoosePresentMode();
-    auto extent = swap_chain_support.ChooseSwapExtent(window_);
-    auto image_count = swap_chain_support.surface_capabilities.minImageCount + 1;
-    if (swap_chain_support.surface_capabilities.maxImageCount > 0 && image_count > swap_chain_support.surface_capabilities.maxImageCount) {
-      image_count = swap_chain_support.surface_capabilities.maxImageCount;
+    swap_chain_support_ = SwapChainSupportDetails(*physical_device_, *window_surface_);
+    auto surface_format = swap_chain_support_.ChooseSurfaceFormat();
+    auto present_mode = swap_chain_support_.ChoosePresentMode();
+    auto extent = swap_chain_support_.ChooseSwapExtent(window_);
+    auto image_count = swap_chain_support_.surface_capabilities.minImageCount + 1;
+    if (swap_chain_support_.surface_capabilities.maxImageCount > 0 && image_count > swap_chain_support_.surface_capabilities.maxImageCount) {
+      image_count = swap_chain_support_.surface_capabilities.maxImageCount;
     }
     vk::SwapchainCreateInfoKHR create_info;
     create_info.surface = **window_surface_;
@@ -373,18 +374,26 @@ private:
       create_info.pQueueFamilyIndices = nullptr;
     }
 
-    create_info.preTransform = swap_chain_support.surface_capabilities.currentTransform;
+    create_info.preTransform = swap_chain_support_.surface_capabilities.currentTransform;
     create_info.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
     create_info.presentMode = present_mode;
     create_info.clipped = VK_TRUE;
     create_info.oldSwapchain = nullptr;
 
     swap_chain_ = std::make_unique<vk::raii::SwapchainKHR>(*device_, create_info);
-    swap_chain_images_ = swap_chain_->getImages();
   }
 
   void ConstructImageViews() {
     std::vector<vk::raii::ImageView> image_views;
+    for (const auto &image: swap_chain_->getImages()) {
+      vk::ImageViewCreateInfo create_info{};
+      create_info.image = image;
+      create_info.viewType = vk::ImageViewType::e2D;
+      create_info.format = swap_chain_support_.ChooseSurfaceFormat().format;
+      create_info.components = vk::ComponentMapping();
+      create_info.subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+      swap_chain_image_views_.emplace_back(*device_, create_info);
+    }
   }
 
 private:
@@ -423,7 +432,8 @@ private:
   std::unique_ptr<vk::raii::Queue> graphics_queue_;
   std::unique_ptr<vk::raii::Queue> present_queue_;
   std::unique_ptr<vk::raii::SwapchainKHR> swap_chain_;
-  std::vector<VkImage> swap_chain_images_;
+  SwapChainSupportDetails swap_chain_support_;
+  std::vector<vk::raii::ImageView> swap_chain_image_views_;
 };
 
 void init_log() {
