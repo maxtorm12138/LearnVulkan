@@ -380,6 +380,11 @@ private:
     create_info.oldSwapchain = nullptr;
 
     swap_chain_ = std::make_unique<vk::raii::SwapchainKHR>(*device_, create_info);
+    swap_chain_images_ = swap_chain_->getImages();
+  }
+
+  void ConstructImageViews() {
+    std::vector<vk::raii::ImageView> image_views;
   }
 
 private:
@@ -418,6 +423,7 @@ private:
   std::unique_ptr<vk::raii::Queue> graphics_queue_;
   std::unique_ptr<vk::raii::Queue> present_queue_;
   std::unique_ptr<vk::raii::SwapchainKHR> swap_chain_;
+  std::vector<VkImage> swap_chain_images_;
 };
 
 void init_log() {
