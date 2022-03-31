@@ -65,6 +65,38 @@ struct SwapChainSupportDetails {
   }
 
   SwapChainSupportDetails() = default;
+
+  vk::SurfaceFormatKHR ChooseSurfaceFormat() {
+    for (const auto &surface_format: surface_formats) {
+      if (surface_format.format == vk::Format::eB8G8R8A8Srgb && surface_format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+        return surface_format;
+      }
+    }
+
+    return surface_formats[0];
+  }
+
+  vk::PresentModeKHR ChoosePresentMode() {
+    for (const auto &present_mode: present_modes) {
+      if (present_mode == vk::PresentModeKHR::eMailbox) {
+        return present_mode;
+      }
+    }
+    return vk::PresentModeKHR::eFifo;
+  }
+
+  vk::Extent2D ChooseSwapExtent(GLFWwindow *window) {
+    if (surface_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+      return surface_capabilities.currentExtent;
+    }
+
+    int w,h;
+    glfwGetFramebufferSize(window, &w, &h);
+    vk::Extent2D extent(w, h);
+    extent.width = std::clamp(extent.width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
+    extent.height = std::clamp(extent.height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
+    return extent;
+  }
 };
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
@@ -305,6 +337,43 @@ private:
     device_ = std::make_unique<vk::raii::Device>(*physical_device_, device_create_info);
     graphics_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(*queue_family_indices_.graphics_family, 0));
     present_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(*queue_family_indices_.present_family, 0));
+  }
+
+  void ConstructSwapChain() {
+    SwapChainSupportDetails swap_chain_support(*physical_device_, *window_surface_);
+    auto surface_format = swap_chain_support.ChooseSurfaceFormat();
+    auto present_mode = swap_chain_support.ChoosePresentMode();
+    auto extent = swap_chain_support.ChooseSwapExtent(window_);
+    auto image_count = swap_chain_support.surface_capabilities.minImageCount + 1;
+    if (swap_chain_support.surface_capabilities.maxImageCount > 0 && image_count > swap_chain_support.surface_capabilities.maxImageCount) {
+      image_count = swap_chain_support.surface_capabilities.maxImageCount;
+    }
+    vk::SwapchainCreateInfoKHR create_info;
+    create_info.surface = **window_surface_;
+    create_info.minImageCount = image_count;
+    create_info.imageFormat = surface_format.format;
+    create_info.imageColorSpace = surface_format.colorSpace;
+    create_info.imageExtent = extent;
+    create_info.imageArrayLayers = 1;
+    create_info.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
+
+    uint32_t queue_family_indice[] = {
+      *queue_family_indices_.graphics_family,
+      *queue_family_indices_.present_family
+    };
+
+    if (queue_family_indices_.graphics_family != queue_family_indices_.present_family) {
+      create_info.imageSharingMode = vk::SharingMode::eConcurrent;
+      create_info.queueFamilyIndexCount = 2;
+      create_info.pQueueFamilyIndices = queue_family_indice;
+    } else {
+      create_info.imageSharingMode = vk::SharingMode::eExclusive;
+      create_info.queueFamilyIndexCount = 0;
+      create_info.pQueueFamilyIndices = nullptr;
+    }
+
+    create_info.preTransform = swap_chain_support.surface_capabilities.currentTransform;
+    create_info.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
   }
 
 private:
