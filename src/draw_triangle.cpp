@@ -440,7 +440,7 @@ void init_log() {
   boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::info);
 }
 
-int main(int, char *argv[0]) {
+int main(int, char *argv[]) {
   init_log();
   glfwInit();
   try {
