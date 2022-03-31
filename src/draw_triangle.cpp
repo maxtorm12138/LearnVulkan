@@ -141,6 +141,7 @@ public:
     ConstructSurface();
     ConstructPhysicalDevice();
     ConstructLogicalDevice();
+    ConstructSwapChain();
   }
 
   ~HelloVulkanApplication() {
@@ -374,6 +375,11 @@ private:
 
     create_info.preTransform = swap_chain_support.surface_capabilities.currentTransform;
     create_info.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+    create_info.presentMode = present_mode;
+    create_info.clipped = VK_TRUE;
+    create_info.oldSwapchain = nullptr;
+
+    swap_chain_ = std::make_unique<vk::raii::SwapchainKHR>(*device_, create_info);
   }
 
 private:
