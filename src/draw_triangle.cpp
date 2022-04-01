@@ -58,6 +58,9 @@ struct SwapChainSupportDetails {
   vk::SurfaceCapabilitiesKHR surface_capabilities;
   std::vector<vk::SurfaceFormatKHR> surface_formats;
   std::vector<vk::PresentModeKHR> present_modes;
+  vk::Extent2D current_extent;
+  vk::PresentModeKHR current_present_mode;
+  vk::SurfaceFormatKHR current_format;
 
   SwapChainSupportDetails(const vk::raii::PhysicalDevice &physical_device, const vk::raii::SurfaceKHR &surface) {
     surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(*surface);
@@ -70,19 +73,23 @@ struct SwapChainSupportDetails {
   vk::SurfaceFormatKHR ChooseSurfaceFormat() {
     for (const auto &surface_format: surface_formats) {
       if (surface_format.format == vk::Format::eB8G8R8A8Srgb && surface_format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+        current_format = surface_format;
         return surface_format;
       }
     }
 
+    current_format = surface_formats[0];
     return surface_formats[0];
   }
 
   vk::PresentModeKHR ChoosePresentMode() {
     for (const auto &present_mode: present_modes) {
       if (present_mode == vk::PresentModeKHR::eMailbox) {
+        current_present_mode = present_mode;
         return present_mode;
       }
     }
+    current_present_mode = vk::PresentModeKHR::eFifo;
     return vk::PresentModeKHR::eFifo;
   }
 
@@ -96,6 +103,7 @@ struct SwapChainSupportDetails {
     vk::Extent2D extent(w, h);
     extent.width = std::clamp(extent.width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
     extent.height = std::clamp(extent.height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
+    current_extent = extent;
     return extent;
   }
 };
@@ -391,7 +399,7 @@ private:
       vk::ImageViewCreateInfo create_info{};
       create_info.image = image;
       create_info.viewType = vk::ImageViewType::e2D;
-      create_info.format = swap_chain_support_.ChooseSurfaceFormat().format;
+      create_info.format = swap_chain_support_.current_format.format;
       create_info.components = vk::ComponentMapping();
       create_info.subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
       swap_chain_image_views_.emplace_back(*device_, create_info);
@@ -422,21 +430,26 @@ private:
     auto vertex_shader_module = CreateShaderModule(vertex_code);
     auto frag_shader_module = CreateShaderModule(vertex_code);
 
-    vk::PipelineShaderStageCreateInfo create_infos[2];
+    vk::PipelineShaderStageCreateInfo shader_stage_create_infos[2];
     // vertex
     {
-      auto & c = create_infos[0];
+      auto & c = shader_stage_create_infos[0];
       c.stage = vk::ShaderStageFlagBits::eVertex;
       c.module = *vertex_shader_module;
     }
 
     // fragment
     {
-      auto & c = create_infos[1];
+      auto & c = shader_stage_create_infos[1];
       c.stage = vk::ShaderStageFlagBits::eFragment;
       c.module = *frag_shader_module;
     }
 
+    vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info({}, 0, nullptr, 0, nullptr);
+    vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info({}, vk::PrimitiveTopology::eTriangleList, true);
+    vk::Viewport view_port(0.0f, 0.0f, swap_chain_support_.current_extent.width, swap_chain_support_.current_extent.height, 0.0f, 1.0f);
+    vk::Rect2D scissor({0, 0}, swap_chain_support_.current_extent);
+    vk::PipelineViewportStateCreateInfo viewport_state_create_info({}, 1, &view_port, 1, &scissor);
   }
 
 
