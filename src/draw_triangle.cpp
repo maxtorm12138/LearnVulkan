@@ -24,6 +24,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <set>
+#include <fstream>
 
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
@@ -143,6 +144,7 @@ public:
     ConstructLogicalDevice();
     ConstructSwapChain();
     ConstructImageViews();
+    ConstructGraphicsPipeline();
   }
 
   ~HelloVulkanApplication() {
@@ -397,8 +399,46 @@ private:
   }
 
   void ConstructGraphicsPipeline() {
+    auto ReadShaderFile = [](const std::string &file_name) {
+      std::ifstream file(file_name, std::ios::ate | std::ios::binary);
+      if (!file.is_open()) {
+        throw std::runtime_error(boost::str(boost::format("shader file %s open fail") % file_name));
+      }
+      std::vector<char> buffer(file.tellg());
+      file.seekg(0);
+      file.read(buffer.data(), buffer.size());
+      return buffer;
+    };
+
+    auto CreateShaderModule = [this](const std::vector<char> &code) {
+      vk::ShaderModuleCreateInfo create_info({}, code.size(), reinterpret_cast<const uint32_t *>(code.data()));
+      return vk::raii::ShaderModule(*device_, create_info);
+    };
+
+    auto vertex_code = ReadShaderFile("shaders/triangle.vert.spv");
+    auto frag_code = ReadShaderFile("shaders/triangle.frag.spv");
+
+    // vertex shader module
+    auto vertex_shader_module = CreateShaderModule(vertex_code);
+    auto frag_shader_module = CreateShaderModule(vertex_code);
+
+    vk::PipelineShaderStageCreateInfo create_infos[2];
+    // vertex
+    {
+      auto & c = create_infos[0];
+      c.stage = vk::ShaderStageFlagBits::eVertex;
+      c.module = *vertex_shader_module;
+    }
+
+    // fragment
+    {
+      auto & c = create_infos[1];
+      c.stage = vk::ShaderStageFlagBits::eFragment;
+      c.module = *frag_shader_module;
+    }
 
   }
+
 
 private:
   const std::vector<const char *> REQUIRED_LAYERS {
