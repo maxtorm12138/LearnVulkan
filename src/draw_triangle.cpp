@@ -396,6 +396,10 @@ private:
     }
   }
 
+  void ConstructGraphicsPipeline() {
+
+  }
+
 private:
   const std::vector<const char *> REQUIRED_LAYERS {
 #ifndef NDEBUG
