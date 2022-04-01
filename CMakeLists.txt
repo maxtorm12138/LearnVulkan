@@ -29,6 +29,9 @@ endif()
 list(APPEND LEARN_VULKAN_COMMON_INCLUDE_DIRS ${GLM_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS}  ${VULKAN_HPP_INCLUDE_DIR})
 list(APPEND LEANN_VULKAN_COMMON_LINK_LIBRARYIES  Vulkan::Vulkan glfw ${GLFW_LIBRARIES} glm::glm Boost::log Boost::boost)
 
+# shader files
+find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
+
 
 add_executable(LearnVulkanDrawTriangle src/draw_triangle.cpp)
 target_include_directories(LearnVulkanDrawTriangle PUBLIC ${LEARN_VULKAN_COMMON_INCLUDE_DIRS} include/)
