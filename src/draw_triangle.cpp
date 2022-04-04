@@ -28,92 +28,92 @@
 
 struct QueueFamilyIndices
 {
-  std::optional<uint32_t> graphics_family;
-  std::optional<uint32_t> present_family;
-  explicit operator bool() const
-  {
-      return graphics_family.has_value() && present_family.has_value();
-  }
+    std::optional<uint32_t> graphics_family;
+    std::optional<uint32_t> present_family;
+    explicit operator bool() const
+    {
+        return graphics_family.has_value() && present_family.has_value();
+    }
 
-  QueueFamilyIndices(const vk::raii::PhysicalDevice& physical_device, const vk::raii::SurfaceKHR& surface)
-  {
-      int i = 0;
-      for (const auto& queue_family : physical_device.getQueueFamilyProperties()) {
-          if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics) {
-              graphics_family = i;
-          }
+    QueueFamilyIndices(const vk::raii::PhysicalDevice& physical_device, const vk::raii::SurfaceKHR& surface)
+    {
+        int i = 0;
+        for (const auto& queue_family : physical_device.getQueueFamilyProperties()) {
+            if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics) {
+                graphics_family = i;
+            }
 
-          if (physical_device.getSurfaceSupportKHR(i, *surface)) {
-              present_family = i;
-          }
+            if (physical_device.getSurfaceSupportKHR(i, *surface)) {
+                present_family = i;
+            }
 
-          if (*this) {
-              break;
-          }
-          i++;
-      }
-  }
+            if (*this) {
+                break;
+            }
+            i++;
+        }
+    }
 
-  QueueFamilyIndices() = default;
+    QueueFamilyIndices() = default;
 };
 
 struct SwapChainSupportDetails
 {
-  vk::SurfaceCapabilitiesKHR surface_capabilities;
-  std::vector<vk::SurfaceFormatKHR> surface_formats;
-  std::vector<vk::PresentModeKHR> present_modes;
-  vk::Extent2D current_extent;
-  vk::PresentModeKHR current_present_mode;
-  vk::SurfaceFormatKHR current_format;
+    vk::SurfaceCapabilitiesKHR surface_capabilities;
+    std::vector<vk::SurfaceFormatKHR> surface_formats;
+    std::vector<vk::PresentModeKHR> present_modes;
+    vk::Extent2D current_extent;
+    vk::PresentModeKHR current_present_mode;
+    vk::SurfaceFormatKHR current_format;
 
-  SwapChainSupportDetails(const vk::raii::PhysicalDevice& physical_device, const vk::raii::SurfaceKHR& surface)
-  {
-      surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(*surface);
-      surface_formats = physical_device.getSurfaceFormatsKHR(*surface);
-      present_modes = physical_device.getSurfacePresentModesKHR(*surface);
-  }
+    SwapChainSupportDetails(const vk::raii::PhysicalDevice& physical_device, const vk::raii::SurfaceKHR& surface)
+    {
+        surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(*surface);
+        surface_formats = physical_device.getSurfaceFormatsKHR(*surface);
+        present_modes = physical_device.getSurfacePresentModesKHR(*surface);
+    }
 
-  SwapChainSupportDetails() = default;
+    SwapChainSupportDetails() = default;
 
-  vk::SurfaceFormatKHR ChooseSurfaceFormat()
-  {
-      for (const auto& surface_format : surface_formats) {
-          if (surface_format.format==vk::Format::eB8G8R8A8Srgb && surface_format.colorSpace==vk::ColorSpaceKHR::eSrgbNonlinear) {
-              current_format = surface_format;
-              return surface_format;
-          }
-      }
+    vk::SurfaceFormatKHR ChooseSurfaceFormat()
+    {
+        for (const auto& surface_format : surface_formats) {
+            if (surface_format.format==vk::Format::eB8G8R8A8Srgb && surface_format.colorSpace==vk::ColorSpaceKHR::eSrgbNonlinear) {
+                current_format = surface_format;
+                return surface_format;
+            }
+        }
 
-      current_format = surface_formats[0];
-      return surface_formats[0];
-  }
+        current_format = surface_formats[0];
+        return surface_formats[0];
+    }
 
-  vk::PresentModeKHR ChoosePresentMode()
-  {
-      for (const auto& present_mode : present_modes) {
-          if (present_mode==vk::PresentModeKHR::eMailbox) {
-              current_present_mode = present_mode;
-              return present_mode;
-          }
-      }
-      current_present_mode = vk::PresentModeKHR::eFifo;
-      return vk::PresentModeKHR::eFifo;
-  }
+    vk::PresentModeKHR ChoosePresentMode()
+    {
+        for (const auto& present_mode : present_modes) {
+            if (present_mode==vk::PresentModeKHR::eMailbox) {
+                current_present_mode = present_mode;
+                return present_mode;
+            }
+        }
+        current_present_mode = vk::PresentModeKHR::eFifo;
+        return vk::PresentModeKHR::eFifo;
+    }
 
-  vk::Extent2D ChooseSwapExtent(GLFWwindow* window)
-  {
-      if (surface_capabilities.currentExtent.width!=std::numeric_limits<uint32_t>::max()) {
-          return surface_capabilities.currentExtent;
-      }
+    vk::Extent2D ChooseSwapExtent(GLFWwindow* window)
+    {
+        if (surface_capabilities.currentExtent.width!=std::numeric_limits<uint32_t>::max()) {
+            return surface_capabilities.currentExtent;
+        }
 
-      int w, h;
-      glfwGetFramebufferSize(window, &w, &h);
-      vk::Extent2D extent(w, h);
-      extent.width = std::clamp(extent.width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
-      extent.height = std::clamp(extent.height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
-      current_extent = extent;
-      return extent;
-  }
+        int w, h;
+        glfwGetFramebufferSize(window, &w, &h);
+        vk::Extent2D extent(w, h);
+        extent.width = std::clamp(extent.width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
+        extent.height = std::clamp(extent.height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
+        current_extent = extent;
+        return extent;
+    }
 };
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -298,41 +298,41 @@ private:
         auto physical_devices = instance_->enumeratePhysicalDevices();
         auto SuitablePhysicalDevice = [this](const vk::raii::PhysicalDevice& physical_device)
         {
-          auto properties = physical_device.getProperties();
-          auto features = physical_device.getFeatures();
-          if (properties.deviceType!=vk::PhysicalDeviceType::eDiscreteGpu) {
-              return false;
-          }
+            auto properties = physical_device.getProperties();
+            auto features = physical_device.getFeatures();
+            if (properties.deviceType!=vk::PhysicalDeviceType::eDiscreteGpu) {
+                return false;
+            }
 
-          if (!features.tessellationShader) {
-              return false;
-          }
+            if (!features.tessellationShader) {
+                return false;
+            }
 
-          auto physical_device_extensions = physical_device.enumerateDeviceExtensionProperties();
-          for (auto required_device_extension : REQUIRED_DEVICE_EXTENSIONS) {
-              bool exists = false;
-              for (const auto& physical_device_extension : physical_device_extensions) {
-                  if (physical_device_extension.extensionName==std::string_view(required_device_extension)) {
-                      exists = true;
-                  }
-              }
+            auto physical_device_extensions = physical_device.enumerateDeviceExtensionProperties();
+            for (auto required_device_extension : REQUIRED_DEVICE_EXTENSIONS) {
+                bool exists = false;
+                for (const auto& physical_device_extension : physical_device_extensions) {
+                    if (physical_device_extension.extensionName==std::string_view(required_device_extension)) {
+                        exists = true;
+                    }
+                }
 
-              if (!exists) {
-                  return false;
-              }
-          }
+                if (!exists) {
+                    return false;
+                }
+            }
 
-          QueueFamilyIndices indices(physical_device, *window_surface_);
-          if (!indices) {
-              return false;
-          }
+            QueueFamilyIndices indices(physical_device, *window_surface_);
+            if (!indices) {
+                return false;
+            }
 
-          SwapChainSupportDetails swap_chain_support(physical_device, *window_surface_);
-          if (swap_chain_support.surface_formats.empty() || swap_chain_support.present_modes.empty()) {
-              return false;
-          }
+            SwapChainSupportDetails swap_chain_support(physical_device, *window_surface_);
+            if (swap_chain_support.surface_formats.empty() || swap_chain_support.present_modes.empty()) {
+                return false;
+            }
 
-          return true;
+            return true;
         };
 
         for (auto& physical_device : physical_devices) {
@@ -452,20 +452,20 @@ private:
     {
         auto ReadShaderFile = [](const std::string& file_name)
         {
-          std::ifstream file(file_name, std::ios::ate | std::ios::binary);
-          if (!file.is_open()) {
-              throw std::runtime_error(boost::str(boost::format("shader file %s open fail")%file_name));
-          }
-          std::vector<char> buffer(file.tellg());
-          file.seekg(0);
-          file.read(buffer.data(), buffer.size());
-          return buffer;
+            std::ifstream file(file_name, std::ios::ate | std::ios::binary);
+            if (!file.is_open()) {
+                throw std::runtime_error(boost::str(boost::format("shader file %s open fail")%file_name));
+            }
+            std::vector<char> buffer(file.tellg());
+            file.seekg(0);
+            file.read(buffer.data(), buffer.size());
+            return buffer;
         };
 
         auto CreateShaderModule = [this](const std::vector<char>& code)
         {
-          vk::ShaderModuleCreateInfo create_info({}, code.size(), reinterpret_cast<const uint32_t*>(code.data()));
-          return vk::raii::ShaderModule(*device_, create_info);
+            vk::ShaderModuleCreateInfo create_info({}, code.size(), reinterpret_cast<const uint32_t*>(code.data()));
+            return vk::raii::ShaderModule(*device_, create_info);
         };
 
         auto vertex_code = ReadShaderFile("shaders/triangle.vert.spv");
