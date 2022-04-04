@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.23.0)
+cmake_minimum_required(VERSION 3.21.1)
 project(LearnVulkan VERSION 0.1.0)
 
 if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.29.30129 AND CMAKE_VERSION VERSION_GREATER 3.20.3)
@@ -25,14 +25,14 @@ find_package(Vulkan REQUIRED FATAL_ERROR)
 # include boost
 find_package(Boost REQUIRED COMPONENTS log)
 
-# includ vulkan hpp
+# include vulkan hpp
 if (DEFINED ENV{VULKAN_HPP_DIR})
   set(VULKAN_HPP_INCLUDE_DIR $ENV{VULKAN_HPP_DIR})
 else()
   message(FATAL_ERROR  "VULKAN_HPP_DIR NOT SET")
 endif()
 
-# shader files
+# shader compiler
 function(target_add_shader TARGET SHADER)
   set(CURRENT_SHADER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${SHADER})
   set(CURRENT_OUTPUT_PATH ${CMAKE_BINARY_DIR}/shaders/${SHADER}.spv)
@@ -50,9 +50,8 @@ function(target_add_shader TARGET SHADER)
     target_sources(${TARGET} PRIVATE ${CURRENT_OUTPUT_PATH})
 endfunction(target_add_shader TARGET SHADER)
 
-message("${CMAKE_BINARY_DIR}")
-
-add_executable(LearnVulkanDrawTriangle src/draw_triangle.cpp)
+file(GLOB SRCS src/*.cpp include/*.hpp)
+add_executable(LearnVulkanDrawTriangle ${SRCS})
 target_add_shader(LearnVulkanDrawTriangle triangle.frag)
 target_add_shader(LearnVulkanDrawTriangle triangle.vert)
 target_include_directories(LearnVulkanDrawTriangle PUBLIC ${Vulkan_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} include/)
