@@ -27,24 +27,24 @@ find_package(Boost REQUIRED COMPONENTS log)
 
 # include vulkan hpp
 if (DEFINED ENV{VULKAN_HPP_DIR})
-  set(VULKAN_HPP_INCLUDE_DIR $ENV{VULKAN_HPP_DIR})
-else()
-  message(FATAL_ERROR  "VULKAN_HPP_DIR NOT SET")
-endif()
+    set(VULKAN_HPP_INCLUDE_DIR $ENV{VULKAN_HPP_DIR})
+else ()
+    message(FATAL_ERROR "VULKAN_HPP_DIR NOT SET")
+endif ()
 
 # shader compiler
 function(target_add_shader TARGET SHADER)
-  set(CURRENT_SHADER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${SHADER})
-  set(CURRENT_OUTPUT_PATH ${CMAKE_BINARY_DIR}/shaders/${SHADER}.spv)
-  get_filename_component(CURRENT_OUTPUT_DIR ${CURRENT_OUTPUT_PATH} DIRECTORY)
-  file(MAKE_DIRECTORY ${CURRENT_OUTPUT_DIR})
+    set(CURRENT_SHADER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${SHADER})
+    set(CURRENT_OUTPUT_PATH ${CMAKE_BINARY_DIR}/shaders/${SHADER}.spv)
+    get_filename_component(CURRENT_OUTPUT_DIR ${CURRENT_OUTPUT_PATH} DIRECTORY)
+    file(MAKE_DIRECTORY ${CURRENT_OUTPUT_DIR})
 
-  add_custom_command(
-    OUTPUT ${CURRENT_OUTPUT_PATH}
-    COMMAND ${Vulkan_GLSLC_EXECUTABLE} -o ${CURRENT_OUTPUT_PATH} ${CURRENT_SHADER_PATH}
-    DEPENDS ${CURRENT_SHADER_PATH}
-    IMPLICIT_DEPENDS CXX ${CURRENT_SHADER_PATH}
-    VERBATIM)
+    add_custom_command(
+            OUTPUT ${CURRENT_OUTPUT_PATH}
+            COMMAND ${Vulkan_GLSLC_EXECUTABLE} -o ${CURRENT_OUTPUT_PATH} ${CURRENT_SHADER_PATH}
+            DEPENDS ${CURRENT_SHADER_PATH}
+            IMPLICIT_DEPENDS CXX ${CURRENT_SHADER_PATH}
+            VERBATIM)
 
     set_source_files_properties(${CURRENT_OUTPUT_PATH} PROPERTIES GENERATED TRUE)
     target_sources(${TARGET} PRIVATE ${CURRENT_OUTPUT_PATH})
@@ -52,6 +52,7 @@ endfunction(target_add_shader TARGET SHADER)
 
 file(GLOB SRCS src/*.cpp include/*.hpp)
 add_executable(LearnVulkanDrawTriangle ${SRCS})
+target_compile_definitions(LearnVulkanDrawTriangle PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
 target_add_shader(LearnVulkanDrawTriangle triangle.frag)
 target_add_shader(LearnVulkanDrawTriangle triangle.vert)
 target_include_directories(LearnVulkanDrawTriangle PUBLIC ${Vulkan_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} include/)
