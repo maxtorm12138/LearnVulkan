@@ -2,6 +2,9 @@
 
 // std
 #include <unordered_set>
+#ifdef __cpp_lib_ranges
+#include <ranges>
+#endif
 
 // self
 #include "configurator_constants.hpp"
