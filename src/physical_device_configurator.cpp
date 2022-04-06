@@ -1,5 +1,3 @@
-#pragma once
-
 #include "physical_device_configurator.hpp"
 
 // std
