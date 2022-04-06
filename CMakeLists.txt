@@ -52,7 +52,7 @@ endfunction(target_add_shader TARGET SHADER)
 
 file(GLOB SRCS src/*.cpp include/*.hpp)
 add_executable(LearnVulkanDrawTriangle ${SRCS})
-target_compile_definitions(LearnVulkanDrawTriangle PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
+target_compile_definitions(LearnVulkanDrawTriangle PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVULKAN_HPP_NO_SPACESHIP_OPERATOR)
 target_add_shader(LearnVulkanDrawTriangle triangle.frag)
 target_add_shader(LearnVulkanDrawTriangle triangle.vert)
 target_include_directories(LearnVulkanDrawTriangle PUBLIC ${Vulkan_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} include/)

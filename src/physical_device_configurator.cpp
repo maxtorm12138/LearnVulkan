@@ -2,35 +2,24 @@
 
 // std
 #include <unordered_set>
-#include <ranges>
 
+// self
 #include "configurator_constants.hpp"
 
 namespace lvk
 {
-
-PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(vk::raii::Instance& instance, vk::raii::SurfaceKHR& surface)
-    :physical_device(nullptr)
+namespace detail
 {
-    std::unordered_set<std::string_view> REQUIRED_DEVICE_EXTENSION
-        {
-            EXT_NAME_VK_KHR_swapchain
-        };
 
-    auto extension_prop_to_name = [](const vk::ExtensionProperties& prop) -> std::string_view
-    {
-        return prop.extensionName;
-    };
+const std::unordered_set<std::string_view> REQUIRED_DEVICE_EXTENSION{
+    EXT_NAME_VK_KHR_swapchain};
 
-    auto filter_extension = [&](const std::string_view extension)
-    {
-        return REQUIRED_DEVICE_EXTENSION.contains(extension) || extension == EXT_NAME_VK_KHR_portability_subset;
-    };
+}
 
-    auto to_c_str = [](std::string_view sv)
-    {
-        return sv.data();
-    };
+PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(
+    vk::raii::Instance& instance, vk::raii::SurfaceKHR& surface)
+    : physical_device(nullptr)
+{
 
     vk::raii::PhysicalDevices physical_devices(instance);
     for (auto& phy_dev : physical_devices)
@@ -47,18 +36,24 @@ PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(vk::raii::Instance& insta
             continue;
         }
 
-        using std::views::transform;
-        using std::views::filter;
+        {
+            auto extension_prop_to_c_name = [](const vk::ExtensionProperties& prop) {
+                return prop.extensionName.data();
+            };
 
-        auto
-            extensions =
-            phy_dev.enumerateDeviceExtensionProperties()
-            | transform(extension_prop_to_name)
-            | filter(filter_extension)
-            | transform(to_c_str);
-        std::ranges::copy(extensions, std::back_inserter(enable_extensions));
+            auto filter_extension = [&](const char* extension) {
+                return detail::REQUIRED_DEVICE_EXTENSION.contains(extension) || extension == EXT_NAME_VK_KHR_portability_subset;
+            };
 
-        if (enable_extensions.size() < REQUIRED_DEVICE_EXTENSION.size())
+            using std::copy_if;
+            using std::transform;
+            auto extension_properties = phy_dev.enumerateDeviceExtensionProperties();
+            std::vector<const char*> extension_names;
+            transform(extension_properties.begin(), extension_properties.end(), std::back_inserter(extension_names), extension_prop_to_c_name);
+            copy_if(extension_names.begin(), extension_names.end(), std::back_inserter(enable_extensions), filter_extension);
+        }
+
+        if (enable_extensions.size() < detail::REQUIRED_DEVICE_EXTENSION.size())
         {
             enable_extensions.clear();
             continue;
@@ -79,9 +74,11 @@ PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(vk::raii::Instance& insta
             continue;
         }
 
-        swap_chain_infos.surface_capabilities = phy_dev.getSurfaceCapabilitiesKHR(*surface);
+        swap_chain_infos.surface_capabilities =
+            phy_dev.getSurfaceCapabilitiesKHR(*surface);
         swap_chain_infos.surface_formats = phy_dev.getSurfaceFormatsKHR(*surface);
-        swap_chain_infos.present_modes = phy_dev.getSurfacePresentModesKHR(*surface);
+        swap_chain_infos.present_modes =
+            phy_dev.getSurfacePresentModesKHR(*surface);
 
         if (swap_chain_infos.present_modes.empty() || swap_chain_infos.surface_formats.empty())
         {
@@ -95,14 +92,14 @@ PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(vk::raii::Instance& insta
     throw std::runtime_error("no suitable gpu found");
 }
 
-PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(PhysicalDeviceConfigurator&& other) noexcept
-    :physical_device(std::move(other.physical_device))
-{
-}
+PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(
+    PhysicalDeviceConfigurator&& other) noexcept
+    : physical_device(std::move(other.physical_device)) {}
 
-PhysicalDeviceConfigurator& PhysicalDeviceConfigurator::operator=(PhysicalDeviceConfigurator&& other) noexcept
+PhysicalDeviceConfigurator& PhysicalDeviceConfigurator::operator=(
+    PhysicalDeviceConfigurator&& other) noexcept
 {
     this->physical_device = std::move(physical_device);
     return *this;
 }
-}
+}// namespace lvk
