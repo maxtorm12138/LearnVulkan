@@ -26,45 +26,6 @@
 #include "physical_device_configurator.hpp"
 
 /*
-struct QueueFamilyIndices
-{
-    std::optional<uint32_t> graphics_family;
-
-    std::optional<uint32_t> present_family;
-
-    explicit operator bool() const
-    {
-
-        return graphics_family.has_value() && present_family.has_value();
-    }
-
-    QueueFamilyIndices(const vk::raii::PhysicalDevice& physical_device, const vk::raii::SurfaceKHR& surface)
-    {
-
-        int i = 0;
-        for (const auto& queue_family : physical_device.getQueueFamilyProperties())
-        {
-            if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
-            {
-                graphics_family = i;
-            }
-
-            if (physical_device.getSurfaceSupportKHR(i, *surface))
-            {
-                present_family = i;
-            }
-
-            if (*this)
-            {
-                break;
-            }
-            i ++;
-        }
-    }
-
-    QueueFamilyIndices() = default;
-};
-
 struct SwapChainSupportDetails
 {
     vk::SurfaceCapabilitiesKHR surface_capabilities;
@@ -149,7 +110,6 @@ public:
         window_configurator_ = lvk::WindowConfigurator(instance_configurator_.instance);
         physical_device_configurator_ = lvk::PhysicalDeviceConfigurator(instance_configurator_.instance, window_configurator_.surface);
         /*
-        ConstructPhysicalDevice();
         ConstructLogicalDevice();
         ConstructSwapChain();
         ConstructImageViews();
@@ -167,72 +127,6 @@ public:
 private:
 
     /*
-    void ConstructPhysicalDevice()
-    {
-
-        auto physical_devices = instance_->enumeratePhysicalDevices();
-        auto SuitablePhysicalDevice = [this](const vk::raii::PhysicalDevice& physical_device)
-        {
-            auto properties = physical_device.getProperties();
-            auto features = physical_device.getFeatures();
-            if (properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu)
-            {
-                return false;
-            }
-
-            if (! features.tessellationShader)
-            {
-                return false;
-            }
-
-            auto physical_device_extensions = physical_device.enumerateDeviceExtensionProperties();
-            for (auto required_device_extension : REQUIRED_DEVICE_EXTENSIONS)
-            {
-                bool exists = false;
-                for (const auto& physical_device_extension : physical_device_extensions)
-                {
-                    if (physical_device_extension.extensionName == std::string_view(required_device_extension))
-                    {
-                        exists = true;
-                    }
-                }
-
-                if (! exists)
-                {
-                    return false;
-                }
-            }
-
-            QueueFamilyIndices indices(physical_device, *window_surface_);
-            if (! indices)
-            {
-                return false;
-            }
-
-            SwapChainSupportDetails swap_chain_support(physical_device, *window_surface_);
-            if (swap_chain_support.surface_formats.empty() || swap_chain_support.present_modes.empty())
-            {
-                return false;
-            }
-
-            return true;
-        };
-
-        for (auto& physical_device : physical_devices)
-        {
-            if (SuitablePhysicalDevice(physical_device))
-            {
-                physical_device_ = std::make_unique<vk::raii::PhysicalDevice>(std::move(physical_device));
-            }
-        }
-
-        if (physical_device_ == nullptr)
-        {
-            throw std::runtime_error("no suitable physical device found");
-        }
-
-        queue_family_indices_ = QueueFamilyIndices(*physical_device_, *window_surface_);
-    }
 
     void ConstructLogicalDevice()
     {
@@ -426,7 +320,6 @@ int main(int, char* argv[])
 {
 
     init_log();
-    glfwInit();
     try
     {
         if (!glfwInit())
