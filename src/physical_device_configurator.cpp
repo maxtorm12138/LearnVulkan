@@ -2,12 +2,9 @@
 
 // std
 #include <unordered_set>
-#ifdef __cpp_lib_ranges
-#include <ranges>
-#endif
 
 // self
-#include "configurator_constants.hpp"
+#include "configurator.hpp"
 
 namespace lvk
 {
@@ -85,14 +82,16 @@ PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(
     throw std::runtime_error("no suitable gpu found");
 }
 
-PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(
-    PhysicalDeviceConfigurator&& other) noexcept
-    : physical_device(std::move(other.physical_device)) {}
+PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(PhysicalDeviceConfigurator&& other) noexcept
+    : physical_device(std::move(other.physical_device)), enable_extensions(std::move(other.enable_extensions)), queue_family_infos(std::move(other.queue_family_infos)), swap_chain_infos(std::move(other.swap_chain_infos)) {}
 
 PhysicalDeviceConfigurator& PhysicalDeviceConfigurator::operator=(
     PhysicalDeviceConfigurator&& other) noexcept
 {
-    this->physical_device = std::move(physical_device);
+    this->physical_device = std::move(other.physical_device);
+    this->enable_extensions = std::move(other.enable_extensions);
+    this->queue_family_infos = std::move(other.queue_family_infos);
+    this->swap_chain_infos = std::move(other.swap_chain_infos);
     return *this;
 }
 }// namespace lvk

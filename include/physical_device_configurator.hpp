@@ -11,23 +11,17 @@
 // std
 #include <optional>
 
+// self
+#include "configurator.hpp"
+
 namespace lvk
 {
-
-struct QueueFamilyInfos {
-    std::optional<uint32_t> graphics_present_queue;
-};
-
-struct SwapChainInfos {
-    vk::SurfaceCapabilitiesKHR surface_capabilities;
-    std::vector<vk::SurfaceFormatKHR> surface_formats;
-    std::vector<vk::PresentModeKHR> present_modes;
-};
 
 struct PhysicalDeviceConfigurator :
     public boost::noncopyable {
     vk::raii::PhysicalDevice physical_device;
     std::vector<std::string> enable_extensions;
+
     QueueFamilyInfos queue_family_infos;
     SwapChainInfos swap_chain_infos;
 

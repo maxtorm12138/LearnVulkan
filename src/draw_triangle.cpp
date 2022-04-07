@@ -1,6 +1,6 @@
 // vulkan
-#include <vulkan/vulkan_raii.hpp>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 // glfw
@@ -8,22 +8,22 @@
 #include <GLFW/glfw3.h>
 
 // boost
-#include <boost/noncopyable.hpp>
 #include <boost/format.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/trivial.hpp>
-
+#include <boost/noncopyable.hpp>
 
 // std
-#include <vector>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
 // module
+#include "device_configurator.hpp"
 #include "instance_configurator.hpp"
-#include "window_configurator.hpp"
 #include "physical_device_configurator.hpp"
+#include "window_configurator.hpp"
 
 /*
 struct SwapChainSupportDetails
@@ -105,10 +105,11 @@ class HelloVulkanApplication :
 {
 public:
     HelloVulkanApplication()
-        :window_configurator_(nullptr), physical_device_configurator_(nullptr)
+        : window_configurator_(nullptr), physical_device_configurator_(nullptr), device_configurator_(nullptr)
     {
         window_configurator_ = lvk::WindowConfigurator(instance_configurator_.instance);
         physical_device_configurator_ = lvk::PhysicalDeviceConfigurator(instance_configurator_.instance, window_configurator_.surface);
+        device_configurator_ = lvk::DeviceConfigurator(physical_device_configurator_.physical_device, physical_device_configurator_.queue_family_infos, physical_device_configurator_.enable_extensions);
         /*
         ConstructLogicalDevice();
         ConstructSwapChain();
@@ -124,54 +125,9 @@ public:
             glfwPollEvents();
         }
     };
+
 private:
-
     /*
-
-    void ConstructLogicalDevice()
-    {
-
-        float queue_priority = 1.0f;
-        std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
-        std::set<uint32_t> unique_queue_families{
-            *queue_family_indices_.graphics_family,
-            *queue_family_indices_.present_family
-        };
-
-        for (auto queue_family : unique_queue_families)
-        {
-            vk::DeviceQueueCreateInfo queue_create_info({}, queue_family, 1, &queue_priority);
-            queue_create_infos.emplace_back(std::move(queue_create_info));
-        }
-
-        std::vector<const char*> enable_device_extensions;
-        {
-            enable_device_extensions = REQUIRED_DEVICE_EXTENSIONS;
-            // VUID-VkDeviceCreateInfo-pProperties-04451
-            auto available_device_extensions = physical_device_->enumerateDeviceExtensionProperties();
-            for (const auto& available_device_extension : available_device_extensions)
-            {
-                if (available_device_extension.extensionName == EXT_NAME_VK_KHR_portability_subset)
-                {
-                    enable_device_extensions.push_back(EXT_NAME_VK_KHR_portability_subset.data());
-                    break;
-                }
-            }
-        }
-
-        vk::PhysicalDeviceFeatures physical_device_features;
-        vk::DeviceCreateInfo device_create_info({},
-                                                queue_create_infos.size(),
-                                                queue_create_infos.data(),
-                                                {},
-                                                {},
-                                                enable_device_extensions.size(),
-                                                enable_device_extensions.data(),
-                                                &physical_device_features);
-        device_ = std::make_unique<vk::raii::Device>(*physical_device_, device_create_info);
-        graphics_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(*queue_family_indices_.graphics_family, 0));
-        present_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(*queue_family_indices_.present_family, 0));
-    }
 
     void ConstructSwapChain()
     {
@@ -290,11 +246,11 @@ private:
     }
     */
 private:
-
 private:
     lvk::InstanceConfigurator instance_configurator_;
     lvk::WindowConfigurator window_configurator_;
     lvk::PhysicalDeviceConfigurator physical_device_configurator_;
+    lvk::DeviceConfigurator device_configurator_;
 
     /*
     std::unique_ptr<vk::raii::Device> device_;

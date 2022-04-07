@@ -10,11 +10,9 @@
 // std
 #include <algorithm>
 #include <unordered_set>
-#ifdef __cpp_lib_ranges
-#include <ranges>
-#endif
 
-#include "configurator_constants.hpp"
+// self
+#include "configurator.hpp"
 
 namespace lvk::detail
 {
