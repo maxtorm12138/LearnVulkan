@@ -12,9 +12,12 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+// fmtlib
+#include <fmt/format.h>
+#include <fmt/core.h>
+
 // std
 #include <string_view>
-#include <format>
 #include <stdexcept>
 
 namespace lvk
@@ -66,7 +69,7 @@ struct WindowConfigurator :
         {
             const char* description;
             int errcode = glfwGetError(&description);
-            throw std::runtime_error(std::format("glfwCreateWindow failed error_code: {} description: {}", errcode, description));
+            throw std::runtime_error(fmt::format("glfwCreateWindow failed error_code: {} description: {}", errcode, description));
         }
         window = win;
         _window_guard.reset(window);
@@ -74,7 +77,7 @@ struct WindowConfigurator :
         int errcode = glfwCreateWindowSurface(*instance, window, nullptr, &surf);
         if (errcode != VK_SUCCESS)
         {
-            throw std::runtime_error(std::format("glfwCreateWindowSurface failed error_code: {}", errcode));
+            throw std::runtime_error(fmt::format("glfwCreateWindowSurface failed error_code: {}", errcode));
         }
 
         surface = vk::raii::SurfaceKHR(instance, surf);

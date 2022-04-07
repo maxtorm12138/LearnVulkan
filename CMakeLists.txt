@@ -31,6 +31,9 @@ else ()
     message(FATAL_ERROR "VULKAN_HPP_DIR NOT SET")
 endif ()
 
+# fmt lib
+add_subdirectory("third_party/fmt")
+
 # shader compiler
 function(target_add_shader TARGET SHADER)
     set(CURRENT_SHADER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/shaders/${SHADER})
@@ -55,5 +58,4 @@ target_compile_definitions(LearnVulkanDrawTriangle PRIVATE -DVULKAN_HPP_NO_STRUC
 target_add_shader(LearnVulkanDrawTriangle triangle.frag)
 target_add_shader(LearnVulkanDrawTriangle triangle.vert)
 target_include_directories(LearnVulkanDrawTriangle PUBLIC ${Vulkan_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} include/)
-target_link_libraries(LearnVulkanDrawTriangle PRIVATE Vulkan::Vulkan glfw glm::glm Boost::log Boost::boost)
-
+target_link_libraries(LearnVulkanDrawTriangle PRIVATE Vulkan::Vulkan glfw glm::glm Boost::log Boost::boost fmt::fmt-header-only)

@@ -14,29 +14,26 @@
 namespace lvk
 {
 
-struct QueueFamilyInfos
-{
+struct QueueFamilyInfos {
     std::optional<uint32_t> graphics_present_queue;
 };
 
-struct SwapChainInfos
-{
+struct SwapChainInfos {
     vk::SurfaceCapabilitiesKHR surface_capabilities;
     std::vector<vk::SurfaceFormatKHR> surface_formats;
     std::vector<vk::PresentModeKHR> present_modes;
 };
 
 struct PhysicalDeviceConfigurator :
-    public boost::noncopyable
-{
+    public boost::noncopyable {
     vk::raii::PhysicalDevice physical_device;
-    std::vector<const char*> enable_extensions;
+    std::vector<std::string> enable_extensions;
     QueueFamilyInfos queue_family_infos;
     SwapChainInfos swap_chain_infos;
 
     explicit PhysicalDeviceConfigurator(std::nullptr_t)
-        :physical_device(nullptr)
-    { }
+        : physical_device(nullptr)
+    {}
 
     explicit PhysicalDeviceConfigurator(vk::raii::Instance& instance, vk::raii::SurfaceKHR& surface);
 
@@ -45,6 +42,5 @@ struct PhysicalDeviceConfigurator :
     PhysicalDeviceConfigurator& operator=(PhysicalDeviceConfigurator&& other) noexcept;
 
 private:
-
 };
-}
+}// namespace lvk

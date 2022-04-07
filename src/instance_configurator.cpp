@@ -8,9 +8,11 @@
 #include <GLFW/glfw3.h>
 
 // std
-#include <unordered_set>
 #include <algorithm>
+#include <unordered_set>
+#ifdef __cpp_lib_ranges
 #include <ranges>
+#endif
 
 #include "configurator_constants.hpp"
 
@@ -60,25 +62,23 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
     }
     return VK_FALSE;
 }
-}
+}// namespace lvk::detail
 
 lvk::InstanceConfigurator::InstanceConfigurator()
-    :context(), instance(nullptr)
+    : context(), instance(nullptr)
 {
-    #ifdef NDEBUG
-    std::unordered_set<std::string_view> REQUIRED_LAYERS{}
-    std::unordered_set<std::string_view> REQUIRED_EXTENSIONS{}
-    #else
+#ifdef NDEBUG
     std::unordered_set<std::string_view> REQUIRED_LAYERS
-        {
-            LAYER_NAME_VK_LAYER_KHRONOS_validation
-        };
+    {}
+    std::unordered_set<std::string_view> REQUIRED_EXTENSIONS {}
+#else
+    std::unordered_set<std::string_view> REQUIRED_LAYERS{
+        LAYER_NAME_VK_LAYER_KHRONOS_validation};
 
-    std::unordered_set<std::string_view> REQUIRED_EXTENSIONS
-        {
-            EXT_NAME_VK_EXT_debug_utils
-        };
-    #endif
+    std::unordered_set<std::string_view> REQUIRED_EXTENSIONS{
+        EXT_NAME_VK_EXT_debug_utils};
+#endif
+
     // get glfw extensions
     {
         uint32_t count = 0;
@@ -86,93 +86,70 @@ lvk::InstanceConfigurator::InstanceConfigurator()
         std::copy(extensions, extensions + count, std::inserter(REQUIRED_EXTENSIONS, REQUIRED_EXTENSIONS.end()));
     }
 
-    auto layer_prop_to_name = [](const vk::LayerProperties& prop) -> std::string_view
+    // views of layer
+    std::vector<const char*> enable_layers_view;
     {
-        return prop.layerName;
-    };
+        auto layer_props = context.enumerateInstanceLayerProperties();
+        std::vector<const char*> layers;
+        std::transform(layer_props.begin(), layer_props.end(), std::back_inserter(layers), [](auto&& prop) { return prop.layerName.data(); });
+        std::copy_if(layers.begin(), layers.end(), std::back_inserter(enable_layers), [&](auto&& name) { return REQUIRED_LAYERS.contains(name); });
+        std::transform(enable_layers.begin(), enable_layers.end(), std::back_inserter(enable_layers_view), [](auto&& name) { return name.c_str(); });
+    }
 
-    auto extension_prop_to_name = [](const vk::ExtensionProperties& prop) -> std::string_view
+    // views of extension
+    std::vector<const char*> enable_extensions_view;
     {
-        return prop.extensionName;
-    };
+        auto opt_or_req_ext = [&](auto&& extension) {
+            return REQUIRED_EXTENSIONS.contains(extension) || extension == EXT_NAME_VK_KHR_get_physical_device_properties2;
+        };
+        auto extension_props = context.enumerateInstanceExtensionProperties();
+        std::vector<const char*> extensions;
+        std::transform(extension_props.begin(), extension_props.end(), std::back_inserter(extensions), [](auto&& prop) { return prop.extensionName.data(); });
+        std::copy_if(extensions.begin(), extensions.end(), std::back_inserter(enable_extensions), opt_or_req_ext);
+        std::transform(enable_extensions.begin(), enable_extensions.end(), std::back_inserter(enable_extensions_view), [](auto&& name) { return name.c_str(); });
+    }
 
-    auto filter_layer = [&REQUIRED_LAYERS](std::string_view layer)
-    {
-        return REQUIRED_LAYERS.contains(layer);
-    };
-
-    auto filter_extension = [&REQUIRED_EXTENSIONS](std::string_view extension) -> bool
-    {
-        return REQUIRED_EXTENSIONS.contains(extension) || extension == EXT_NAME_VK_KHR_get_physical_device_properties2;
-    };
-
-    auto to_c_str = [](std::string_view name)
-    {
-        return name.data();
-    };
-
-    using std::views::transform;
-    using std::views::filter;
-    auto layers = context.enumerateInstanceLayerProperties() | transform(layer_prop_to_name) | filter(filter_layer) | transform(to_c_str);
-    auto
-        extensions =
-        context.enumerateInstanceExtensionProperties() | transform(extension_prop_to_name) | filter(filter_extension) | transform(to_c_str);
-    std::vector<const char*> enable_layers;
-    std::vector<const char*> enable_extensions;
-    std::ranges::copy(layers, std::back_inserter(enable_layers));
-    std::ranges::copy(extensions, std::back_inserter(enable_extensions));
-
-    if (enable_layers.size() < REQUIRED_LAYERS.size())
+    if (enable_layers_view.size() < REQUIRED_LAYERS.size())
     {
         throw std::runtime_error("required layer not satisfied");
     }
 
-    if (enable_extensions.size() < REQUIRED_EXTENSIONS.size())
+    if (enable_extensions_view.size() < REQUIRED_EXTENSIONS.size())
     {
         throw std::runtime_error("required extension not satisfied");
     }
 
     vk::DebugUtilsMessageSeverityFlagsEXT message_severity =
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
 
     vk::DebugUtilsMessageTypeFlagsEXT message_type =
-        vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
+        vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 
-    vk::ApplicationInfo application_info
-        {
-            .pApplicationName = "Hello Vulkan",
-            .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
-            .pEngineName = "No engine",
-            .engineVersion = VK_MAKE_VERSION(0, 1, 0),
-            .apiVersion = VK_API_VERSION_1_0,
-        };
+    vk::ApplicationInfo application_info{
+        .pApplicationName = "Hello Vulkan",
+        .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
+        .pEngineName = "No engine",
+        .engineVersion = VK_MAKE_VERSION(0, 1, 0),
+        .apiVersion = VK_API_VERSION_1_0,
+    };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain{
         vk::InstanceCreateInfo{
             .pApplicationInfo = &application_info,
-            .enabledLayerCount = static_cast<uint32_t>(enable_layers.size()),
-            .ppEnabledLayerNames = enable_layers.data(),
-            .enabledExtensionCount = static_cast<uint32_t>(enable_extensions.size()),
-            .ppEnabledExtensionNames = enable_extensions.data()
-        },
+            .enabledLayerCount = static_cast<uint32_t>(enable_layers_view.size()),
+            .ppEnabledLayerNames = enable_layers_view.data(),
+            .enabledExtensionCount = static_cast<uint32_t>(enable_extensions_view.size()),
+            .ppEnabledExtensionNames = enable_extensions_view.data()},
         vk::DebugUtilsMessengerCreateInfoEXT{
             .messageSeverity = message_severity,
             .messageType = message_type,
-            .pfnUserCallback = &detail::DebugCallback
-        }
-    };
+            .pfnUserCallback = &detail::DebugCallback}};
 
-    #ifdef NDEBUG
+#ifdef NDEBUG
     chain.unlink<vk::DebugUtilsMessengerCreateInfoEXT>();
-    #endif
-
+#endif
     instance = vk::raii::Instance(context, chain.get<vk::InstanceCreateInfo>());
-    #ifndef NDEBUG
+#ifndef NDEBUG
     _debug_messenger = vk::raii::DebugUtilsMessengerEXT(instance, chain.get<vk::DebugUtilsMessengerCreateInfoEXT>());
-    #endif
+#endif
 }
