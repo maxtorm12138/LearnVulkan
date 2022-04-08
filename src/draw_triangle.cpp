@@ -22,7 +22,6 @@
 // module
 #include "device_configurator.hpp"
 #include "instance_configurator.hpp"
-#include "physical_device_configurator.hpp"
 #include "swapchain_configurator.hpp"
 #include "window_configurator.hpp"
 
@@ -31,14 +30,12 @@ class HelloVulkanApplication :
 {
 public:
     HelloVulkanApplication()
-        : window_configurator_(nullptr), physical_device_configurator_(nullptr), device_configurator_(nullptr), swapchain_configurator_(nullptr)
+        : window_configurator_(nullptr), device_configurator_(nullptr), swapchain_configurator_(nullptr)
     {
         window_configurator_ = lvk::WindowConfigurator(instance_configurator_.instance);
-        physical_device_configurator_ = lvk::PhysicalDeviceConfigurator(instance_configurator_.instance, window_configurator_.surface);
-        device_configurator_ = lvk::DeviceConfigurator(physical_device_configurator_.physical_device, physical_device_configurator_.queue_family_infos, physical_device_configurator_.enable_extensions);
-        swapchain_configurator_ = lvk::SwapchainConfigurator(device_configurator_.device, physical_device_configurator_.swap_chain_infos, physical_device_configurator_.queue_family_infos, window_configurator_.window, window_configurator_.surface);
+        device_configurator_ = lvk::DeviceConfigurator(instance_configurator_.instance, window_configurator_.surface);
+        swapchain_configurator_ = lvk::SwapchainConfigurator(device_configurator_.device, device_configurator_.swap_chain_infos, device_configurator_.queue_family_infos, window_configurator_.window, window_configurator_.surface);
         /*
-        ConstructImageViews();
         ConstructGraphicsPipeline();
         */
     }
@@ -53,22 +50,6 @@ public:
 
 private:
     /*
-
-    void ConstructImageViews()
-    {
-
-        std::vector<vk::raii::ImageView> image_views;
-        for (const auto& image : swap_chain_->getImages())
-        {
-            vk::ImageViewCreateInfo create_info{};
-            create_info.image = image;
-            create_info.viewType = vk::ImageViewType::e2D;
-            create_info.format = swap_chain_support_.current_format.format;
-            create_info.components = vk::ComponentMapping();
-            create_info.subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-            swap_chain_image_views_.emplace_back(*device_, create_info);
-        }
-    }
 
     void ConstructGraphicsPipeline()
     {
@@ -125,7 +106,6 @@ private:
 private:
     lvk::InstanceConfigurator instance_configurator_;
     lvk::WindowConfigurator window_configurator_;
-    lvk::PhysicalDeviceConfigurator physical_device_configurator_;
     lvk::DeviceConfigurator device_configurator_;
     lvk::SwapchainConfigurator swapchain_configurator_;
 
