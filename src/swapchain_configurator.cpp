@@ -2,7 +2,14 @@
 namespace lvk
 {
 SwapchainConfigurator::SwapchainConfigurator(std::nullptr_t) : swapchain(nullptr) {}
-SwapchainConfigurator::SwapchainConfigurator(vk::raii::Device& device, SwapchainInfos& swapchain_infos, QueueFamilyInfos& queue_family_infos, GLFWwindow* window, vk::raii::SurfaceKHR& surface) : swapchain(nullptr), surface_format(swapchain_infos.surface_formats[0]), present_mode(vk::PresentModeKHR::eFifo)
+SwapchainConfigurator::SwapchainConfigurator(
+    vk::raii::Device& device,
+    SwapchainInfos& swapchain_infos,
+    QueueFamilyInfos& queue_family_infos,
+    GLFWwindow* window,
+    vk::raii::SurfaceKHR& surface) : swapchain(nullptr),
+                                     surface_format(swapchain_infos.surface_formats[0]),
+                                     present_mode(vk::PresentModeKHR::eFifo)
 {
     for (const auto& fmt : swapchain_infos.surface_formats)
     {
@@ -77,7 +84,8 @@ SwapchainConfigurator::SwapchainConfigurator(vk::raii::Device& device, Swapchain
     }
 }
 
-SwapchainConfigurator::SwapchainConfigurator(SwapchainConfigurator&& other) noexcept : swapchain(std::move(other.swapchain)), swapchain_image_views(std::move(other.swapchain_image_views))
+SwapchainConfigurator::SwapchainConfigurator(SwapchainConfigurator&& other) noexcept : swapchain(std::move(other.swapchain)),
+                                                                                       swapchain_image_views(std::move(other.swapchain_image_views))
 {
     this->present_mode = other.present_mode;
     this->surface_format = other.surface_format;

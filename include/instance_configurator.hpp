@@ -15,8 +15,7 @@
 namespace lvk
 {
 
-struct InstanceConfigurator :
-    boost::noncopyable {
+struct InstanceConfigurator : boost::noncopyable {
     vk::raii::Context context;
     vk::raii::Instance instance;
     std::vector<std::string> enable_extensions;

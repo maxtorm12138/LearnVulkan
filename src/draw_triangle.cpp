@@ -22,6 +22,7 @@
 // module
 #include "device_configurator.hpp"
 #include "instance_configurator.hpp"
+#include "pipeline_configurator.hpp"
 #include "swapchain_configurator.hpp"
 #include "window_configurator.hpp"
 
@@ -30,14 +31,15 @@ class HelloVulkanApplication :
 {
 public:
     HelloVulkanApplication()
-        : window_configurator_(nullptr), device_configurator_(nullptr), swapchain_configurator_(nullptr)
+        : window_configurator_(nullptr),
+          device_configurator_(nullptr),
+          swapchain_configurator_(nullptr),
+          pipeline_configurator_(nullptr)
     {
         window_configurator_ = lvk::WindowConfigurator(instance_configurator_.instance);
         device_configurator_ = lvk::DeviceConfigurator(instance_configurator_.instance, window_configurator_.surface);
         swapchain_configurator_ = lvk::SwapchainConfigurator(device_configurator_.device, device_configurator_.swap_chain_infos, device_configurator_.queue_family_infos, window_configurator_.window, window_configurator_.surface);
-        /*
-        ConstructGraphicsPipeline();
-        */
+        pipeline_configurator_ = lvk::PipelineConfigurator(device_configurator_.device, swapchain_configurator_.extent);
     }
 
     void Run() const
@@ -49,66 +51,11 @@ public:
     };
 
 private:
-    /*
-
-    void ConstructGraphicsPipeline()
-    {
-
-        auto ReadShaderFile = [](const std::string& file_name)
-        {
-            std::ifstream file(file_name, std::ios::ate | std::ios::binary);
-            if (! file.is_open())
-            {
-                throw std::runtime_error(boost::str(boost::format("shader file %s open fail") % file_name));
-            }
-            std::vector<char> buffer(file.tellg());
-            file.seekg(0);
-            file.read(buffer.data(), buffer.size());
-            return buffer;
-        };
-
-        auto CreateShaderModule = [this](const std::vector<char>& code)
-        {
-            vk::ShaderModuleCreateInfo create_info({}, code.size(), reinterpret_cast<const uint32_t*>(code.data()));
-            return vk::raii::ShaderModule(*device_, create_info);
-        };
-
-        auto vertex_code = ReadShaderFile("shaders/triangle.vert.spv");
-        auto frag_code = ReadShaderFile("shaders/triangle.frag.spv");
-
-        // vertex shader module
-        auto vertex_shader_module = CreateShaderModule(vertex_code);
-        auto frag_shader_module = CreateShaderModule(vertex_code);
-
-        vk::PipelineShaderStageCreateInfo shader_stage_create_infos[2];
-        // vertex
-        {
-            auto& c = shader_stage_create_infos[0];
-            c.stage = vk::ShaderStageFlagBits::eVertex;
-            c.module = *vertex_shader_module;
-        }
-
-        // fragment
-        {
-            auto& c = shader_stage_create_infos[1];
-            c.stage = vk::ShaderStageFlagBits::eFragment;
-            c.module = *frag_shader_module;
-        }
-
-        vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info({}, 0, nullptr, 0, nullptr);
-        vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info({}, vk::PrimitiveTopology::eTriangleList, true);
-        vk::Viewport view_port(0.0f, 0.0f, swap_chain_support_.current_extent.width, swap_chain_support_.current_extent.height, 0.0f, 1.0f);
-        vk::Rect2D scissor({0, 0}, swap_chain_support_.current_extent);
-        vk::PipelineViewportStateCreateInfo viewport_state_create_info({}, 1, &view_port, 1, &scissor);
-    }
-    */
-private:
-private:
     lvk::InstanceConfigurator instance_configurator_;
     lvk::WindowConfigurator window_configurator_;
     lvk::DeviceConfigurator device_configurator_;
     lvk::SwapchainConfigurator swapchain_configurator_;
-
+    lvk::PipelineConfigurator pipeline_configurator_;
     /*
 
     std::vector<vk::raii::ImageView> swap_chain_image_views_;
