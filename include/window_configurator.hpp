@@ -4,29 +4,28 @@
 #include <boost/noncopyable.hpp>
 
 // vulkan
-#include <vulkan/vulkan_structs.hpp>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 // glfw
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 // fmtlib
-#include <fmt/format.h>
 #include <fmt/core.h>
+#include <fmt/format.h>
 
 // std
-#include <string_view>
 #include <stdexcept>
+#include <string_view>
 
 namespace lvk
 {
 namespace detail
 {
 
-struct WindowDeleter
-{
+struct WindowDeleter {
     void operator()(GLFWwindow* win)
     {
         glfwDestroyWindow(win);
@@ -35,13 +34,11 @@ struct WindowDeleter
 
 constexpr std::initializer_list<std::pair<int, int>> DEFAULT_HINTS{
     {GLFW_CLIENT_API, GLFW_NO_API},
-    {GLFW_RESIZABLE,  GLFW_FALSE}
-};
+    {GLFW_RESIZABLE, GLFW_FALSE}};
 
-}
+}// namespace detail
 struct WindowConfigurator :
-    public boost::noncopyable
-{
+    public boost::noncopyable {
     std::unique_ptr<GLFWwindow, detail::WindowDeleter> _window_guard;
 
     vk::raii::SurfaceKHR surface;
@@ -49,15 +46,15 @@ struct WindowConfigurator :
     GLFWwindow* window;
 
     explicit WindowConfigurator(std::nullptr_t)
-        :_window_guard(nullptr), surface(nullptr), window(nullptr)
-    { }
+        : _window_guard(nullptr), surface(nullptr), window(nullptr)
+    {}
 
     explicit WindowConfigurator(vk::raii::Instance& instance,
                                 int width = 800,
                                 int height = 600,
                                 std::string_view title = "",
                                 const std::vector<std::pair<int, int>>& hints = detail::DEFAULT_HINTS)
-        :_window_guard(nullptr), surface(nullptr), window(nullptr)
+        : _window_guard(nullptr), surface(nullptr), window(nullptr)
     {
         for (const auto& hint : hints)
         {
@@ -84,7 +81,7 @@ struct WindowConfigurator :
     }
 
     WindowConfigurator(WindowConfigurator&& other) noexcept
-        :_window_guard(std::move(other._window_guard)), surface(std::move(other.surface)), window(other.window)
+        : _window_guard(std::move(other._window_guard)), surface(std::move(other.surface)), window(other.window)
     {
     }
 
@@ -96,4 +93,4 @@ struct WindowConfigurator :
         return *this;
     }
 };
-}
+}// namespace lvk

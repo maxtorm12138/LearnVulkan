@@ -14,11 +14,6 @@
 
 namespace lvk
 {
-namespace detail
-{
-
-
-}
 
 struct InstanceConfigurator :
     boost::noncopyable {
