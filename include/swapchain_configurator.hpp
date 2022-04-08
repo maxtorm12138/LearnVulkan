@@ -18,9 +18,11 @@ namespace lvk
 {
 struct SwapchainConfigurator : public boost::noncopyable {
     vk::raii::SwapchainKHR swapchain;
+    std::vector<vk::raii::ImageView> swapchain_image_views;
     vk::PresentModeKHR present_mode;
     vk::SurfaceFormatKHR surface_format;
     vk::Extent2D extent;
+    uint32_t image_count;
 
     SwapchainConfigurator(std::nullptr_t);
     SwapchainConfigurator(vk::raii::Device& device, SwapchainInfos& swap_chain_infos, QueueFamilyInfos& queue_family_infos, GLFWwindow* window, vk::raii::SurfaceKHR& surface);

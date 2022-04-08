@@ -36,7 +36,7 @@ SwapchainConfigurator::SwapchainConfigurator(vk::raii::Device& device, Swapchain
         }
     }
 
-    auto image_count = swapchain_infos.surface_capabilities.minImageCount + 1;
+    image_count = swapchain_infos.surface_capabilities.minImageCount + 1;
     if (swapchain_infos.surface_capabilities.maxImageCount > 0 && image_count > swapchain_infos.surface_capabilities.maxImageCount)
     {
         image_count = swapchain_infos.surface_capabilities.maxImageCount;
@@ -60,9 +60,24 @@ SwapchainConfigurator::SwapchainConfigurator(vk::raii::Device& device, Swapchain
         .oldSwapchain = nullptr};
 
     swapchain = vk::raii::SwapchainKHR(device, swapchain_create_info);
+    for (auto& image : swapchain.getImages())
+    {
+        vk::ImageViewCreateInfo create_info{
+            .image = image,
+            .viewType = vk::ImageViewType::e2D,
+            .format = surface_format.format,
+            .components = vk::ComponentMapping(),
+            .subresourceRange = vk::ImageSubresourceRange{
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1}};
+        swapchain_image_views.emplace_back(device, create_info);
+    }
 }
 
-SwapchainConfigurator::SwapchainConfigurator(SwapchainConfigurator&& other) noexcept : swapchain(std::move(other.swapchain))
+SwapchainConfigurator::SwapchainConfigurator(SwapchainConfigurator&& other) noexcept : swapchain(std::move(other.swapchain)), swapchain_image_views(std::move(other.swapchain_image_views))
 {
     this->present_mode = other.present_mode;
     this->surface_format = other.surface_format;
@@ -72,6 +87,7 @@ SwapchainConfigurator::SwapchainConfigurator(SwapchainConfigurator&& other) noex
 SwapchainConfigurator& SwapchainConfigurator::operator=(SwapchainConfigurator&& other) noexcept
 {
     this->swapchain = std::move(other.swapchain);
+    this->swapchain_image_views = std::move(other.swapchain_image_views);
     this->present_mode = other.present_mode;
     this->surface_format = other.surface_format;
     this->extent = other.extent;
