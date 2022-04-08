@@ -25,6 +25,8 @@ DeviceConfigurator::DeviceConfigurator(vk::raii::PhysicalDevice& physical_device
         .pEnabledFeatures = &physical_device_features};
 
     device = vk::raii::Device(physical_device, device_create_info);
+    graphics_queue = device.getQueue(*queue_family_infos.graphics_present_queue, 0);
+    present_queue = device.getQueue(*queue_family_infos.graphics_present_queue, 0);
 }
 
 DeviceConfigurator::DeviceConfigurator(DeviceConfigurator&& other) noexcept : device(std::move(other.device)), graphics_queue(std::move(other.graphics_queue)), present_queue(std::move(other.present_queue))

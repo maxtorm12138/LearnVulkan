@@ -23,96 +23,21 @@
 #include "device_configurator.hpp"
 #include "instance_configurator.hpp"
 #include "physical_device_configurator.hpp"
+#include "swapchain_configurator.hpp"
 #include "window_configurator.hpp"
-
-/*
-struct SwapChainSupportDetails
-{
-    vk::SurfaceCapabilitiesKHR surface_capabilities;
-
-    std::vector<vk::SurfaceFormatKHR> surface_formats;
-
-    std::vector<vk::PresentModeKHR> present_modes;
-
-    vk::Extent2D current_extent;
-
-    vk::PresentModeKHR current_present_mode;
-
-    vk::SurfaceFormatKHR current_format;
-
-    SwapChainSupportDetails(const vk::raii::PhysicalDevice& physical_device, const vk::raii::SurfaceKHR& surface)
-    {
-
-        surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(*surface);
-        surface_formats = physical_device.getSurfaceFormatsKHR(*surface);
-        present_modes = physical_device.getSurfacePresentModesKHR(*surface);
-    }
-
-    SwapChainSupportDetails() = default;
-
-    vk::SurfaceFormatKHR ChooseSurfaceFormat()
-    {
-
-        for (const auto& surface_format : surface_formats)
-        {
-            if (surface_format.format == vk::Format::eB8G8R8A8Srgb && surface_format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
-            {
-                current_format = surface_format;
-                return surface_format;
-            }
-        }
-
-        current_format = surface_formats[0];
-        return surface_formats[0];
-    }
-
-    vk::PresentModeKHR ChoosePresentMode()
-    {
-
-        for (const auto& present_mode : present_modes)
-        {
-            if (present_mode == vk::PresentModeKHR::eMailbox)
-            {
-                current_present_mode = present_mode;
-                return present_mode;
-            }
-        }
-        current_present_mode = vk::PresentModeKHR::eFifo;
-        return vk::PresentModeKHR::eFifo;
-    }
-
-    vk::Extent2D ChooseSwapExtent(GLFWwindow* window)
-    {
-
-        if (surface_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-        {
-            return surface_capabilities.currentExtent;
-        }
-
-        int w, h;
-        glfwGetFramebufferSize(window, &w, &h);
-        vk::Extent2D extent(w, h);
-        extent.width = std::clamp(extent.width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
-        extent.height = std::clamp(extent.height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
-        current_extent = extent;
-        return extent;
-    }
-};
-*/
 
 class HelloVulkanApplication :
     public boost::noncopyable
 {
 public:
     HelloVulkanApplication()
-        : window_configurator_(nullptr), physical_device_configurator_(nullptr), device_configurator_(nullptr)
+        : window_configurator_(nullptr), physical_device_configurator_(nullptr), device_configurator_(nullptr), swapchain_configurator_(nullptr)
     {
         window_configurator_ = lvk::WindowConfigurator(instance_configurator_.instance);
         physical_device_configurator_ = lvk::PhysicalDeviceConfigurator(instance_configurator_.instance, window_configurator_.surface);
         device_configurator_ = lvk::DeviceConfigurator(physical_device_configurator_.physical_device, physical_device_configurator_.queue_family_infos, physical_device_configurator_.enable_extensions);
+        swapchain_configurator_ = lvk::SwapchainConfigurator(device_configurator_.device, physical_device_configurator_.swap_chain_infos, physical_device_configurator_.queue_family_infos, window_configurator_.window, window_configurator_.surface);
         /*
-        ConstructLogicalDevice();
-        ConstructSwapChain();
         ConstructImageViews();
         ConstructGraphicsPipeline();
         */
@@ -128,55 +53,6 @@ public:
 
 private:
     /*
-
-    void ConstructSwapChain()
-    {
-
-        swap_chain_support_ = SwapChainSupportDetails(*physical_device_, *window_surface_);
-        auto surface_format = swap_chain_support_.ChooseSurfaceFormat();
-        auto present_mode = swap_chain_support_.ChoosePresentMode();
-        auto extent = swap_chain_support_.ChooseSwapExtent(window_);
-        auto image_count = swap_chain_support_.surface_capabilities.minImageCount + 1;
-        if (swap_chain_support_.surface_capabilities.maxImageCount > 0
-            && image_count > swap_chain_support_.surface_capabilities.maxImageCount)
-        {
-            image_count = swap_chain_support_.surface_capabilities.maxImageCount;
-        }
-        vk::SwapchainCreateInfoKHR create_info;
-        create_info.surface = **window_surface_;
-        create_info.minImageCount = image_count;
-        create_info.imageFormat = surface_format.format;
-        create_info.imageColorSpace = surface_format.colorSpace;
-        create_info.imageExtent = extent;
-        create_info.imageArrayLayers = 1;
-        create_info.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
-
-        uint32_t queue_family_indice[] = {
-            *queue_family_indices_.graphics_family,
-            *queue_family_indices_.present_family
-        };
-
-        if (queue_family_indices_.graphics_family != queue_family_indices_.present_family)
-        {
-            create_info.imageSharingMode = vk::SharingMode::eConcurrent;
-            create_info.queueFamilyIndexCount = 2;
-            create_info.pQueueFamilyIndices = queue_family_indice;
-        }
-        else
-        {
-            create_info.imageSharingMode = vk::SharingMode::eExclusive;
-            create_info.queueFamilyIndexCount = 0;
-            create_info.pQueueFamilyIndices = nullptr;
-        }
-
-        create_info.preTransform = swap_chain_support_.surface_capabilities.currentTransform;
-        create_info.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-        create_info.presentMode = present_mode;
-        create_info.clipped = VK_TRUE;
-        create_info.oldSwapchain = nullptr;
-
-        swap_chain_ = std::make_unique<vk::raii::SwapchainKHR>(*device_, create_info);
-    }
 
     void ConstructImageViews()
     {
@@ -251,17 +127,9 @@ private:
     lvk::WindowConfigurator window_configurator_;
     lvk::PhysicalDeviceConfigurator physical_device_configurator_;
     lvk::DeviceConfigurator device_configurator_;
+    lvk::SwapchainConfigurator swapchain_configurator_;
 
     /*
-    std::unique_ptr<vk::raii::Device> device_;
-
-    std::unique_ptr<vk::raii::Queue> graphics_queue_;
-
-    std::unique_ptr<vk::raii::Queue> present_queue_;
-
-    std::unique_ptr<vk::raii::SwapchainKHR> swap_chain_;
-
-    SwapChainSupportDetails swap_chain_support_;
 
     std::vector<vk::raii::ImageView> swap_chain_image_views_;
      */

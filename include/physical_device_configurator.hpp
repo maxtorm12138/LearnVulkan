@@ -23,7 +23,7 @@ struct PhysicalDeviceConfigurator :
     std::vector<std::string> enable_extensions;
 
     QueueFamilyInfos queue_family_infos;
-    SwapChainInfos swap_chain_infos;
+    SwapchainInfos swap_chain_infos;
 
     explicit PhysicalDeviceConfigurator(std::nullptr_t)
         : physical_device(nullptr)

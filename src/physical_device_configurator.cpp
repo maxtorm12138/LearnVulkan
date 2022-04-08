@@ -65,7 +65,7 @@ PhysicalDeviceConfigurator::PhysicalDeviceConfigurator(
             continue;
         }
 
-        swap_chain_infos = SwapChainInfos{
+        swap_chain_infos = SwapchainInfos{
             .surface_capabilities = phy_dev.getSurfaceCapabilitiesKHR(*surface),
             .surface_formats = phy_dev.getSurfaceFormatsKHR(*surface),
             .present_modes = phy_dev.getSurfacePresentModesKHR(*surface)};

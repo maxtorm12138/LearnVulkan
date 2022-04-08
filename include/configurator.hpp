@@ -25,7 +25,7 @@ struct QueueFamilyInfos {
     std::optional<uint32_t> graphics_present_queue;
 };
 
-struct SwapChainInfos {
+struct SwapchainInfos {
     vk::SurfaceCapabilitiesKHR surface_capabilities;
     std::vector<vk::SurfaceFormatKHR> surface_formats;
     std::vector<vk::PresentModeKHR> present_modes;
