@@ -28,15 +28,18 @@ PipelineConfigurator::PipelineConfigurator(std::nullptr_t)
     : vertex_shader_module(nullptr),
       fragment_shader_module(nullptr),
       pipeline_layout(nullptr),
+      render_pass(nullptr),
       pipeline(nullptr)
 {}
 
-PipelineConfigurator::PipelineConfigurator(vk::raii::Device &device, vk::Extent2D &extent)
+PipelineConfigurator::PipelineConfigurator(vk::raii::Device &device, vk::SurfaceFormatKHR &surface_format, vk::Extent2D &extent)
     : vertex_shader_module(nullptr),
       fragment_shader_module(nullptr),
       pipeline_layout(nullptr),
+      render_pass(nullptr),
       pipeline(nullptr)
 {
+
     {
         auto code = detail::ReadShaderFile("shaders/triangle.vert.spv");
         vk::ShaderModuleCreateInfo shader_module_create_info{
@@ -71,7 +74,7 @@ PipelineConfigurator::PipelineConfigurator(vk::raii::Device &device, vk::Extent2
 
     vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info{
         .topology = vk::PrimitiveTopology::eTriangleList,
-        .primitiveRestartEnable = true};
+        .primitiveRestartEnable = VK_FALSE};
 
     vk::Viewport viewport{
         .x = 0.0f,
@@ -122,6 +125,12 @@ PipelineConfigurator::PipelineConfigurator(vk::raii::Device &device, vk::Extent2
         .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
     };
 
+    vk::PipelineColorBlendStateCreateInfo color_blend_state_create_info{
+        .logicOpEnable = VK_FALSE,
+        .logicOp = vk::LogicOp::eCopy,
+        .attachmentCount = 1,
+        .pAttachments = &color_blend_attachment_state};
+
     std::array<vk::DynamicState, 2> dynamic_states{
         vk::DynamicState::eViewport,
         vk::DynamicState::eLineWidth};
@@ -137,17 +146,67 @@ PipelineConfigurator::PipelineConfigurator(vk::raii::Device &device, vk::Extent2
         .pPushConstantRanges = nullptr};
 
     pipeline_layout = vk::raii::PipelineLayout(device, pipeline_layout_create_info);
+
+    vk::AttachmentDescription attachment_description{
+        .format = surface_format.format,
+        .samples = vk::SampleCountFlagBits::e1,
+        .loadOp = vk::AttachmentLoadOp::eClear,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+        .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+        .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+        .initialLayout = vk::ImageLayout::eUndefined,
+        .finalLayout = vk::ImageLayout::ePresentSrcKHR};
+
+    vk::AttachmentReference attachment_reference{
+        .attachment = 0,
+        .layout = vk::ImageLayout::eAttachmentOptimal};
+
+    vk::SubpassDescription subpass_description{
+        .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &attachment_reference};
+
+    vk::RenderPassCreateInfo render_pass_create_info{
+        .attachmentCount = 1,
+        .pAttachments = &attachment_description,
+        .subpassCount = 1,
+        .pSubpasses = &subpass_description};
+
+    render_pass = vk::raii::RenderPass(device, render_pass_create_info);
+
+    vk::GraphicsPipelineCreateInfo graphic_pipeline_create_info{
+        .stageCount = shader_stage_create_infos.size(),
+        .pStages = shader_stage_create_infos.data(),
+        .pVertexInputState = &vertex_input_state_create_info,
+        .pInputAssemblyState = &input_assembly_state_create_info,
+        .pViewportState = &viewport_state_create_info,
+        .pRasterizationState = &rasterization_state_create_info,
+        .pMultisampleState = &multisampling_state_create_info,
+        .pDepthStencilState = nullptr,
+        .pColorBlendState = &color_blend_state_create_info,
+        .pDynamicState = nullptr,
+        .layout = *pipeline_layout,
+        .renderPass = *render_pass,
+        .subpass = 0,
+        .basePipelineHandle = nullptr,
+        .basePipelineIndex = -1,
+    };
+
+    vk::Optional<const vk::raii::PipelineCache> pipeline_cache{nullptr};
+    pipeline = vk::raii::Pipeline(device, pipeline_cache, graphic_pipeline_create_info);
 }
 
 PipelineConfigurator::PipelineConfigurator(PipelineConfigurator &&other) noexcept : vertex_shader_module(std::move(other.vertex_shader_module)),
                                                                                     fragment_shader_module(std::move(other.fragment_shader_module)),
                                                                                     pipeline_layout(std::move(other.pipeline_layout)),
+                                                                                    render_pass(std::move(other.render_pass)),
                                                                                     pipeline(std::move(other.pipeline)) {}
 PipelineConfigurator &PipelineConfigurator::operator=(PipelineConfigurator &&other) noexcept
 {
     this->vertex_shader_module = std::move(other.vertex_shader_module);
     this->fragment_shader_module = std::move(other.fragment_shader_module);
     this->pipeline_layout = std::move(other.pipeline_layout);
+    this->render_pass = std::move(other.render_pass);
     this->pipeline = std::move(other.pipeline);
     return *this;
 }
