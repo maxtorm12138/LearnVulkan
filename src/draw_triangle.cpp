@@ -3,9 +3,7 @@
 #include <vulkan/vulkan_raii.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
-// glfw
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include <SDL2pp/SDL2pp.hh>
 
 // boost
 #include <boost/format.hpp>
@@ -20,27 +18,18 @@
 #include <vector>
 
 // module
-#include "device_configurator.hpp"
-#include "instance_configurator.hpp"
-#include "pipeline_configurator.hpp"
-#include "renderer_configurator.hpp"
-#include "swapchain_configurator.hpp"
-#include "window_configurator.hpp"
+#include "lvk_device.hpp"
+#include "lvk_swapchain.hpp"
 
-class HelloVulkanApplication :
-    public boost::noncopyable
+class HelloVulkanApplication : public boost::noncopyable
 {
 public:
     HelloVulkanApplication()
-        : window_configurator_(nullptr),
-          device_configurator_(nullptr),
-          swapchain_configurator_(nullptr),
-          pipeline_configurator_(nullptr),
-          renderer_configurator_(nullptr)
     {
-        window_configurator_ = lvk::WindowConfigurator(instance_configurator_.instance);
-        device_configurator_ = lvk::DeviceConfigurator(instance_configurator_.instance, window_configurator_.surface);
-        swapchain_configurator_ = lvk::SwapchainConfigurator(device_configurator_.device, device_configurator_.swap_chain_infos, device_configurator_.queue_family_infos, window_configurator_.window, window_configurator_.surface);
+        window = std::make_unique<SDL2pp::Window>("Hello Vulkan", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+        device_ = lvk::Device(*window);
+        swapchain_ = lvk::Swapchain(device_, *window);
+        /*
         pipeline_configurator_ = lvk::PipelineConfigurator(device_configurator_.device, swapchain_configurator_.surface_format, swapchain_configurator_.extent);
         renderer_configurator_ = lvk::RendererConfigurator(device_configurator_.device, device_configurator_.queue_family_infos, swapchain_configurator_.swapchain_image_views, pipeline_configurator_.render_pass, swapchain_configurator_.extent);
 
@@ -54,19 +43,29 @@ public:
             vk::FenceCreateInfo fence_create_info{.flags = vk::FenceCreateFlagBits::eSignaled};
             in_flight_fence = vk::raii::Fence(device_configurator_.device, fence_create_info);
         }
+        */
     }
 
     void Run()
     {
-        while (!glfwWindowShouldClose(window_configurator_.window))
+        bool running = true;
+        while(running)
         {
-            glfwPollEvents();
-            DrawFrame();
+            SDL_Event event;
+            while (SDL_PollEvent(&event))
+            {
+                if (event.type == SDL_QUIT)
+                {
+                    running = false;
+                }
+            }
+
+            SDL_Delay(1);
         }
-        device_configurator_.device.waitIdle();
     };
 
 private:
+/*
     void DrawFrame()
     {
         vk::ArrayProxy<const vk::Fence> fences{
@@ -143,9 +142,11 @@ private:
         command_buffer.end();
     }
 
-    lvk::InstanceConfigurator instance_configurator_;
-    lvk::WindowConfigurator window_configurator_;
-    lvk::DeviceConfigurator device_configurator_;
+*/
+    std::unique_ptr<SDL2pp::Window> window{nullptr};
+    lvk::Device device_{nullptr};
+    lvk::Swapchain swapchain_{nullptr};
+/*
     lvk::SwapchainConfigurator swapchain_configurator_;
     lvk::PipelineConfigurator pipeline_configurator_;
     lvk::RendererConfigurator renderer_configurator_;
@@ -153,6 +154,7 @@ private:
     vk::raii::Semaphore image_available_semaphore{nullptr};
     vk::raii::Semaphore render_finishend_semaphore{nullptr};
     vk::raii::Fence in_flight_fence{nullptr};
+*/
 };
 
 void init_log()
@@ -163,14 +165,10 @@ void init_log()
 int main(int, char* argv[])
 {
 
-    init_log();
     try
     {
-        if (!glfwInit())
-        {
-            throw std::runtime_error("glfwInit fail");
-        }
-
+        init_log();
+        SDL2pp::SDL sdl(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
         HelloVulkanApplication app;
         app.Run();
     }
@@ -178,6 +176,5 @@ int main(int, char* argv[])
     {
         std::cerr << e.what() << std::endl;
     }
-    glfwTerminate();
     return 0;
 }

@@ -1,14 +1,11 @@
-cmake_minimum_required(VERSION 3.21.1)
+cmake_minimum_required(VERSION 3.21.0)
 project(LearnVulkan VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# include glfw
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory("third_party/glfw")
+# include sdl2pp
+find_package(SDL2PP REQUIRED)
 
 # include glm
 list(APPEND CMAKE_PREFIX_PATH third_party/glm/cmake)
@@ -48,12 +45,10 @@ function(target_add_shader TARGET SHADER)
     target_sources(${TARGET} PRIVATE ${CURRENT_OUTPUT_PATH})
 endfunction(target_add_shader TARGET SHADER)
 
-file(GLOB SRCS src/*.cpp include/*.hpp)
-add_executable(LearnVulkanDrawTriangle ${SRCS})
+file(GLOB DRAW_TRIANGLE_SRCS include/lvk_*.hpp src/lvk_*.cpp src/draw_triangle.cpp)
+add_executable(LearnVulkanDrawTriangle ${DRAW_TRIANGLE_SRCS})
 target_compile_definitions(LearnVulkanDrawTriangle PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVULKAN_HPP_NO_SPACESHIP_OPERATOR)
 target_add_shader(LearnVulkanDrawTriangle triangle.frag)
 target_add_shader(LearnVulkanDrawTriangle triangle.vert)
-target_include_directories(LearnVulkanDrawTriangle PUBLIC ${Vulkan_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} include/)
-target_link_libraries(LearnVulkanDrawTriangle PRIVATE Vulkan::Vulkan glfw glm::glm Boost::log Boost::boost fmt::fmt-header-only)
-
-
+target_include_directories(LearnVulkanDrawTriangle PUBLIC ${Vulkan_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} ${SDL2PP_INCLUDE_DIRS} include/)
+target_link_libraries(LearnVulkanDrawTriangle PRIVATE ${SDL2PP_LIBRARIES} Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
