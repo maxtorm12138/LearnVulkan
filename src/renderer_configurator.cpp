@@ -5,20 +5,6 @@ namespace lvk
 RendererConfigurator::RendererConfigurator(std::nullptr_t) : command_pool(nullptr){};
 RendererConfigurator::RendererConfigurator(vk::raii::Device &device, const QueueFamilyInfos &queue_family_infos, const std::vector<vk::raii::ImageView> &image_views, vk::raii::RenderPass &render_pass, vk::Extent2D extent) : command_pool(nullptr)
 {
-    for (const auto &image_view : image_views)
-    {
-        std::array<vk::ImageView, 1> attachments{
-            *image_view};
-
-        vk::FramebufferCreateInfo frame_buffer_create_info{
-            .renderPass = *render_pass,
-            .attachmentCount = attachments.size(),
-            .pAttachments = attachments.data(),
-            .width = extent.width,
-            .height = extent.height,
-            .layers = 1};
-        framebuffers.emplace_back(device, frame_buffer_create_info);
-    }
 
     vk::CommandPoolCreateInfo command_pool_create_info{
         .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,

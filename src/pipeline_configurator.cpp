@@ -147,32 +147,6 @@ PipelineConfigurator::PipelineConfigurator(vk::raii::Device &device, vk::Surface
 
     pipeline_layout = vk::raii::PipelineLayout(device, pipeline_layout_create_info);
 
-    vk::AttachmentDescription attachment_description{
-        .format = surface_format.format,
-        .samples = vk::SampleCountFlagBits::e1,
-        .loadOp = vk::AttachmentLoadOp::eClear,
-        .storeOp = vk::AttachmentStoreOp::eStore,
-        .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
-        .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
-        .initialLayout = vk::ImageLayout::eUndefined,
-        .finalLayout = vk::ImageLayout::ePresentSrcKHR};
-
-    vk::AttachmentReference attachment_reference{
-        .attachment = 0,
-        .layout = vk::ImageLayout::eAttachmentOptimal};
-
-    vk::SubpassDescription subpass_description{
-        .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &attachment_reference};
-
-    vk::RenderPassCreateInfo render_pass_create_info{
-        .attachmentCount = 1,
-        .pAttachments = &attachment_description,
-        .subpassCount = 1,
-        .pSubpasses = &subpass_description};
-
-    render_pass = vk::raii::RenderPass(device, render_pass_create_info);
 
     vk::GraphicsPipelineCreateInfo graphic_pipeline_create_info{
         .stageCount = shader_stage_create_infos.size(),

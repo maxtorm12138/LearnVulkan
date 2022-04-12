@@ -15,7 +15,6 @@ struct PipelineConfigurator : public boost::noncopyable {
     vk::raii::ShaderModule vertex_shader_module;
     vk::raii::ShaderModule fragment_shader_module;
     vk::raii::PipelineLayout pipeline_layout;
-    vk::raii::RenderPass render_pass;
     vk::raii::Pipeline pipeline;
 
     PipelineConfigurator(std::nullptr_t);
