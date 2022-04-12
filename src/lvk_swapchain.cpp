@@ -1,7 +1,7 @@
 #include "lvk_swapchain.hpp"
 
 // sdl2
-#include <sdl2/SDL_vulkan.h>
+#include <SDL_vulkan.h>
 
 namespace lvk
 {

@@ -7,7 +7,7 @@
 #include <boost/log/trivial.hpp>
 
 // sdl2
-#include <SDL2/SDL_vulkan.h>
+#include <SDL_vulkan.h>
 
 // fmtlib
 #include <fmt/format.h>

@@ -3,6 +3,7 @@
 #include <vulkan/vulkan_raii.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
+// SDL2pp
 #include <SDL2pp/SDL2pp.hh>
 
 // boost
@@ -67,7 +68,6 @@ public:
                 }
             }
             DrawFrame();
-            SDL_Delay(1);
         }
         device_.GetDevice().waitIdle();
     };
@@ -130,7 +130,9 @@ private:
         vk::CommandBufferBeginInfo command_buffer_begin_info{};
         command_buffer.begin(command_buffer_begin_info);
 
-        vk::ClearValue clear_value{};
+        vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
+        vk::ClearValue clear_value;
+        clear_value.color = clear_color;
 
         vk::RenderPassBeginInfo render_pass_begin_info{
             .renderPass = *swapchain_.GetRenderPass(),
