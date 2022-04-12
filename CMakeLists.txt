@@ -46,6 +46,7 @@ function(target_add_shader TARGET SHADER)
 endfunction(target_add_shader TARGET SHADER)
 
 file(GLOB DRAW_TRIANGLE_SRCS include/lvk_*.hpp src/lvk_*.cpp src/draw_triangle.cpp)
+message("SRCS: ${DRAW_TRIANGLE_SRCS}")
 add_executable(LearnVulkanDrawTriangle ${DRAW_TRIANGLE_SRCS})
 target_compile_definitions(LearnVulkanDrawTriangle PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVULKAN_HPP_NO_SPACESHIP_OPERATOR)
 target_add_shader(LearnVulkanDrawTriangle triangle.frag)

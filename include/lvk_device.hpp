@@ -31,16 +31,16 @@ public:
     [[nodiscard]] uint32_t GetGraphicsPresentQueueIndex() const { return graphics_present_queue_index_; }
     [[nodiscard]] const vk::raii::Device &GetDevice() const { return device_; }
     [[nodiscard]] const vk::raii::Queue &GetGraphicsPresentQueue() const { return graphics_present_queue_; }
+    [[nodiscard]] const vk::raii::CommandPool &GetCommandPool() const { return command_pool_; }
 private:
 
     void ConstructInstance(SDL2pp::Window& window);
     void ConstructSurface(SDL2pp::Window& window);
     void PickPhysicalDevice(SDL2pp::Window& window);
     void ConstructDevice(SDL2pp::Window& window);
-
-    vk::raii::Context context_{};
-
+    void ConstructCommandPool();
 private:
+    vk::raii::Context context_{};
     vk::raii::Instance instance_{nullptr};
     vk::raii::DebugUtilsMessengerEXT debug_messenger_{nullptr};
 
@@ -51,5 +51,7 @@ private:
 
     vk::raii::Device device_{nullptr};
     vk::raii::Queue graphics_present_queue_{nullptr};
+
+    vk::raii::CommandPool command_pool_{nullptr};
 };
 }  // namespace lvk

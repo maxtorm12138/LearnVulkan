@@ -15,6 +15,7 @@ Swapchain::Swapchain(lvk::Device& device, SDL2pp::Window& window)
     ConstructSwapchain(device);
     ConstructImageViews(device);
     ConstructRenderPass(device);
+    ConstructFrameBuffers(device);
 }
 
 Swapchain::Swapchain(Swapchain&& other) noexcept
@@ -22,7 +23,7 @@ Swapchain::Swapchain(Swapchain&& other) noexcept
     this->swapchain_ = std::move(other.swapchain_);
     this->image_views_ = std::move(other.image_views_);
     this->render_pass_ = std::move(other.render_pass_);
-    this->framebuffers_ = std::move(other.framebuffers_);
+    this->frame_buffers_ = std::move(other.frame_buffers_);
     this->present_mode_ = std::move(other.present_mode_);
     this->surface_format_ = std::move(other.surface_format_);
     this->extent_ = std::move(other.extent_);
@@ -34,7 +35,7 @@ Swapchain& Swapchain::operator=(Swapchain&& other) noexcept
     this->swapchain_ = std::move(other.swapchain_);
     this->image_views_ = std::move(other.image_views_);
     this->render_pass_ = std::move(other.render_pass_);
-    this->framebuffers_ = std::move(other.framebuffers_);
+    this->frame_buffers_ = std::move(other.frame_buffers_);
     this->present_mode_ = std::move(other.present_mode_);
     this->surface_format_ = std::move(other.surface_format_);
     this->extent_ = std::move(other.extent_);
@@ -202,7 +203,7 @@ void Swapchain::ConstructFrameBuffers(lvk::Device &device)
             .layers = 1
         };
 
-        framebuffers_.emplace_back(device.GetDevice(), frame_buffer_create_info);
+        frame_buffers_.emplace_back(device.GetDevice(), frame_buffer_create_info);
     }
 }
 

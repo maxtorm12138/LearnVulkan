@@ -85,6 +85,7 @@ Device::Device(SDL2pp::Window &window)
     ConstructSurface(window);
     PickPhysicalDevice(window);
     ConstructDevice(window);
+    ConstructCommandPool();
 }
 
 
@@ -98,6 +99,7 @@ Device::Device(Device&& other) noexcept
     this->graphics_present_queue_index_ = std::move(other.graphics_present_queue_index_);
     this->device_ = std::move(other.device_);
     this->graphics_present_queue_ = std::move(other.graphics_present_queue_);
+    this->command_pool_ = std::move(other.command_pool_);
 }
 
 Device& Device::operator=(Device&& other) noexcept
@@ -110,6 +112,7 @@ Device& Device::operator=(Device&& other) noexcept
     this->graphics_present_queue_index_ = std::move(other.graphics_present_queue_index_);
     this->device_ = std::move(other.device_);
     this->graphics_present_queue_ = std::move(other.graphics_present_queue_);
+    this->command_pool_ = std::move(other.command_pool_);
     return *this;
 }
 
@@ -326,6 +329,17 @@ void Device::ConstructDevice(SDL2pp::Window& window)
 
   device_ = vk::raii::Device(physical_device_, device_create_info);
   graphics_present_queue_ = device_.getQueue(graphics_present_queue_index_, 0);
+}
+
+void Device::ConstructCommandPool()
+{
+    vk::CommandPoolCreateInfo command_pool_create_info
+    {
+        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        .queueFamilyIndex = graphics_present_queue_index_
+    };
+
+    command_pool_ = vk::raii::CommandPool(device_, command_pool_create_info);
 }
 
 }// namespace lvk
