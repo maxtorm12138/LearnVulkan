@@ -11,7 +11,6 @@
 #include <vulkan/vulkan_raii.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
-
 // std
 #include <memory>
 
