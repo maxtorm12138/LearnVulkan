@@ -19,7 +19,7 @@ class Renderer : public boost::noncopyable
 {
 public:
     Renderer(std::nullptr_t);
-    Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<lvk::Pipeline>& pipeline);
+    Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<vk::raii::SurfaceKHR> &surface, const std::unique_ptr<SDL2pp::Window> &window, const std::unique_ptr<lvk::Pipeline>& pipeline);
     Renderer(Renderer &&other) noexcept;
 
     void DrawFrame();

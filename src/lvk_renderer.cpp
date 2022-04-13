@@ -2,11 +2,11 @@
 namespace lvk
 {
 
-Renderer::Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<lvk::Pipeline>& pipeline) :
+Renderer::Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<vk::raii::SurfaceKHR> &surface, const std::unique_ptr<SDL2pp::Window> &window, const std::unique_ptr<lvk::Pipeline>& pipeline) :
     device_(device),
     pipeline_(pipeline)
 {
-
+    swapchain_ = std::make_unique<lvk::Swapchain>(device, surface, window);
     vk::CommandBufferAllocateInfo command_buffer_allocate_info
     {
         .commandPool = **device_->GetCommandPool(),

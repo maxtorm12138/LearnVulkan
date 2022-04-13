@@ -64,6 +64,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     }
     return VK_FALSE;
 }
+
 }
 
 Engine::Engine()
@@ -87,6 +88,7 @@ Engine::Engine()
 
     surface_ = std::make_unique<vk::raii::SurfaceKHR>(*instance_, surface);
     device_ = std::make_unique<lvk::Device>(instance_, surface_);
+    pipeline_ = std::make_unique<lvk::Pipeline>(device_, )
 }
 
 void Engine::Run()

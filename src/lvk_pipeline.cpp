@@ -24,7 +24,7 @@ std::vector<char> ReadShaderFile(std::string_view file_name)
 }
 }// namespace detail
 
-Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, vk::Extent2D extent, const std::unique_ptr<vk::raii::RenderPass> &render_pass) :
+Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique_ptr<vk::raii::RenderPass> &render_pass) :
     device_(device),
     render_pass_(render_pass)
 {
@@ -81,34 +81,6 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, vk::Extent2D exte
         .primitiveRestartEnable = VK_FALSE
     };
 
-    vk::Viewport viewport
-    {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = static_cast<float>(extent.width),
-        .height = static_cast<float>(extent.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f
-    };
-
-    vk::ArrayProxy<vk::Viewport> viewports(viewport);
-
-    vk::Rect2D scissor
-    {
-        .offset{0, 0},
-        .extent = extent
-    };
-
-    vk::ArrayProxy<vk::Rect2D> scissors(scissor);
-
-    vk::PipelineViewportStateCreateInfo viewport_state_create_info
-    {
-        .viewportCount = viewports.size(),
-        .pViewports = viewports.data(),
-        .scissorCount = scissors.size(),
-        .pScissors = scissors.data()
-    };
-
     vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info
     {
         .depthClampEnable = VK_FALSE,
@@ -155,7 +127,7 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, vk::Extent2D exte
     std::array<vk::DynamicState, 2> dynamic_states
     {
         vk::DynamicState::eViewport,
-        vk::DynamicState::eLineWidth
+        vk::DynamicState::eScissor
     };
 
     vk::PipelineDynamicStateCreateInfo dynamic_state_create_info
@@ -181,12 +153,12 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, vk::Extent2D exte
         .pStages = shader_stage_create_infos.data(),
         .pVertexInputState = &vertex_input_state_create_info,
         .pInputAssemblyState = &input_assembly_state_create_info,
-        .pViewportState = &viewport_state_create_info,
+        .pViewportState = nullptr,
         .pRasterizationState = &rasterization_state_create_info,
         .pMultisampleState = &multisampling_state_create_info,
         .pDepthStencilState = nullptr,
         .pColorBlendState = &color_blend_state_create_info,
-        .pDynamicState = nullptr,
+        .pDynamicState = &dynamic_state_create_info,
         .layout = **pipeline_layout_,
         .renderPass = **render_pass_,
         .subpass = 0,

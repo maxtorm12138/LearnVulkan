@@ -17,7 +17,7 @@ namespace lvk
 class Pipeline : public boost::noncopyable
 {
 public:
-    Pipeline(const std::unique_ptr<lvk::Device>& device, vk::Extent2D extent, const std::unique_ptr<vk::raii::RenderPass> &render_pass);
+    Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique_ptr<vk::raii::RenderPass> &render_pass);
     Pipeline(Pipeline&& other) noexcept;
 public:
     const std::unique_ptr<vk::raii::Pipeline> &GetPipeline() const;

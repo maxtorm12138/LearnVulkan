@@ -16,6 +16,7 @@
 
 // module
 #include "lvk_device.hpp"
+#include "lvk_pipeline.hpp"
 
 namespace lvk
 {
@@ -41,6 +42,7 @@ private:
 
     std::unique_ptr<vk::raii::SurfaceKHR> surface_;
     std::unique_ptr<lvk::Device> device_;
+    std::unique_ptr<lvk::Pipeline> pipeline_;
 };
 
 };
