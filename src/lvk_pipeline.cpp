@@ -24,6 +24,7 @@ std::vector<char> ReadShaderFile(std::string_view file_name)
 }
 }// namespace detail
 
+
 Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique_ptr<vk::raii::RenderPass> &render_pass) :
     device_(device),
     render_pass_(render_pass)
@@ -65,6 +66,14 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
             .module = **fragment_shader_module_,
             .pName = "main"
         }
+    };
+
+    vk::PipelineViewportStateCreateInfo viewport_state_create_info
+    {
+        .viewportCount = 1,
+        .pViewports = nullptr,
+        .scissorCount = 1,
+        .pScissors = nullptr
     };
 
     vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info
@@ -153,7 +162,7 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
         .pStages = shader_stage_create_infos.data(),
         .pVertexInputState = &vertex_input_state_create_info,
         .pInputAssemblyState = &input_assembly_state_create_info,
-        .pViewportState = nullptr,
+        .pViewportState = &viewport_state_create_info,
         .pRasterizationState = &rasterization_state_create_info,
         .pMultisampleState = &multisampling_state_create_info,
         .pDepthStencilState = nullptr,

@@ -64,7 +64,16 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     }
     return VK_FALSE;
 }
+}
 
+int SDLCALL Engine::SDLEventFilter(void *userdata, SDL_Event *event)
+{
+    auto engine = reinterpret_cast<Engine *>(userdata);
+    if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED)
+    {
+        engine->NotifyWindowResized();
+    }
+    return 0;
 }
 
 Engine::Engine()
@@ -88,11 +97,13 @@ Engine::Engine()
 
     surface_ = std::make_unique<vk::raii::SurfaceKHR>(*instance_, surface);
     device_ = std::make_unique<lvk::Device>(instance_, surface_);
-    pipeline_ = std::make_unique<lvk::Pipeline>(device_, )
+    renderer_ = std::make_unique<lvk::Renderer>(device_, surface_, window_);
+    pipeline_ = std::make_unique<lvk::Pipeline>(device_, renderer_->GetSwapchain()->GetRenderPass());
 }
 
 void Engine::Run()
 {
+    SDL_AddEventWatch(&Engine::SDLEventFilter, this);
     bool running{true};
     while(running)
     {
@@ -104,7 +115,64 @@ void Engine::Run()
                 running = false;
             }
         }
+
+        renderer_->DrawFrame([this](const vk::raii::CommandBuffer &command_buffer, const std::unique_ptr<vk::raii::RenderPass> &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
+        {
+            command_buffer.reset();
+            vk::CommandBufferBeginInfo command_buffer_begin_info{};
+            command_buffer.begin(command_buffer_begin_info);
+
+            // set viewport
+            vk::Viewport viewport
+            {
+                .x = 0,
+                .y = 0,
+                .width = static_cast<float>(window_extent.width),
+                .height = static_cast<float>(window_extent.height)
+            };
+            vk::ArrayProxy<const vk::Viewport> viewports(viewport);
+            command_buffer.setViewport(0, viewports);
+
+            // set scissor
+            vk::Rect2D scissor
+            {
+                .offset = {0, 0},
+                .extent = window_extent,
+            };
+
+            vk::ArrayProxy<const vk::Rect2D> scissors(scissor);
+            command_buffer.setScissor(0, scissors);
+
+
+            vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
+            vk::ClearValue clear_value;
+            clear_value.color = clear_color;
+            vk::RenderPassBeginInfo render_pass_begin_info
+            {
+                .renderPass = **render_pass,
+                .framebuffer = *frame_buffer,
+                .renderArea
+                {
+                    .offset = {0, 0},
+                    .extent = window_extent,
+                },
+                .clearValueCount = 1,
+                .pClearValues = &clear_value
+            };
+
+            command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
+            command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, **this->pipeline_->GetPipeline());
+            command_buffer.draw(3, 1, 0, 0);
+            command_buffer.endRenderPass();
+            command_buffer.end();
+        });
     }
+    device_->GetDevice()->waitIdle();
+}
+
+void Engine::NotifyWindowResized()
+{
+    window_resized_ = true;
 }
 
 void Engine::ConstructInstance()

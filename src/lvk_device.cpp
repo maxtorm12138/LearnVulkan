@@ -18,6 +18,7 @@ Device::Device(const std::unique_ptr<vk::raii::Instance> &instance, const std::u
 {
     PickPhysicalDevice(instance, surface);
     ConstructDevice();
+    ConstructCommandPool();
 }
 
 Device::Device(Device&& other) noexcept
