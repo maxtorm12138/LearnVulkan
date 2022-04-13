@@ -18,40 +18,26 @@ class Device : public boost::noncopyable
 {
 public:
     Device(std::nullptr_t);
-    Device(SDL2pp::Window& window);
-
+    Device(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface);
     Device(Device&& other) noexcept;
-    Device& operator=(Device&& other) noexcept;
 
 public:
-    [[nodiscard]] const vk::raii::Context &GetContext() const { return context_; }
-    [[nodiscard]] const vk::raii::Instance &GetInstance() const { return instance_; }
-    [[nodiscard]] const vk::raii::SurfaceKHR &GetSurface() const { return surface_; }
-    [[nodiscard]] const vk::raii::PhysicalDevice &GetPhysicalDevice() const { return physical_device_; }
-    [[nodiscard]] uint32_t GetGraphicsPresentQueueIndex() const { return graphics_present_queue_index_; }
-    [[nodiscard]] const vk::raii::Device &GetDevice() const { return device_; }
-    [[nodiscard]] const vk::raii::Queue &GetGraphicsPresentQueue() const { return graphics_present_queue_; }
-    [[nodiscard]] const vk::raii::CommandPool &GetCommandPool() const { return command_pool_; }
-private:
+    const std::unique_ptr<vk::raii::Device> &GetDevice() const;
+    uint32_t GetCommandQueueIndex() const;
+    const std::unique_ptr<vk::raii::Queue> &GetCommandQueue() const;
+    const std::unique_ptr<vk::raii::CommandPool> &GetCommandPool() const;
+    const std::unique_ptr<vk::raii::PhysicalDevice> &GetPhysicalDevice() const;
 
-    void ConstructInstance(SDL2pp::Window& window);
-    void ConstructSurface(SDL2pp::Window& window);
-    void PickPhysicalDevice(SDL2pp::Window& window);
-    void ConstructDevice(SDL2pp::Window& window);
+private:
+    void PickPhysicalDevice(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface);
+    void ConstructDevice();
     void ConstructCommandPool();
+
 private:
-    vk::raii::Context context_{};
-    vk::raii::Instance instance_{nullptr};
-    vk::raii::DebugUtilsMessengerEXT debug_messenger_{nullptr};
-
-    vk::raii::SurfaceKHR surface_{nullptr};
-
-    vk::raii::PhysicalDevice physical_device_{nullptr};
-    uint32_t graphics_present_queue_index_;
-
-    vk::raii::Device device_{nullptr};
-    vk::raii::Queue graphics_present_queue_{nullptr};
-
-    vk::raii::CommandPool command_pool_{nullptr};
+    std::unique_ptr<vk::raii::PhysicalDevice> physical_device_;
+    std::unique_ptr<vk::raii::Device> device_;
+    uint32_t command_queue_index_;
+    std::unique_ptr<vk::raii::Queue> command_queue_;
+    std::unique_ptr<vk::raii::CommandPool> command_pool_;
 };
 }  // namespace lvk

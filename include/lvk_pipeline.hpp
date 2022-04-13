@@ -10,7 +10,6 @@
 
 // module
 #include "lvk_device.hpp"
-#include "lvk_swapchain.hpp"
 
 namespace lvk
 {
@@ -18,19 +17,19 @@ namespace lvk
 class Pipeline : public boost::noncopyable
 {
 public:
-    Pipeline(std::nullptr_t);
-    Pipeline(lvk::Device &device, lvk::Swapchain &swapchain);
+    Pipeline(const std::unique_ptr<lvk::Device>& device, vk::Extent2D extent, const std::unique_ptr<vk::raii::RenderPass> &render_pass);
     Pipeline(Pipeline&& other) noexcept;
-    Pipeline& operator=(Pipeline&& other) noexcept;
 public:
-    [[nodiscard]] const vk::raii::Pipeline &GetPipeline() const { return pipeline_; }
-
+    const std::unique_ptr<vk::raii::Pipeline> &GetPipeline() const;
 private:
-    vk::raii::ShaderModule vertex_shader_module_{nullptr};
-    vk::raii::ShaderModule fragment_shader_module_{nullptr};
-    vk::raii::PipelineLayout pipeline_layout_{nullptr};
+    const std::unique_ptr<lvk::Device>& device_;
+    const std::unique_ptr<vk::raii::RenderPass> &render_pass_;
+
+    std::unique_ptr<vk::raii::ShaderModule> vertex_shader_module_{nullptr};
+    std::unique_ptr<vk::raii::ShaderModule> fragment_shader_module_{nullptr};
+    std::unique_ptr<vk::raii::PipelineLayout> pipeline_layout_{nullptr};
     vk::Optional<const vk::raii::PipelineCache> pipeline_cache_{nullptr};
-    vk::raii::Pipeline pipeline_{nullptr};
+    std::unique_ptr<vk::raii::Pipeline> pipeline_{nullptr};
 };
 
 }// namespace lvk

@@ -10,6 +10,7 @@
 
 // module
 #include "lvk_device.hpp"
+#include "lvk_swapchain.hpp"
 #include "lvk_pipeline.hpp"
 
 namespace lvk
@@ -18,9 +19,8 @@ class Renderer : public boost::noncopyable
 {
 public:
     Renderer(std::nullptr_t);
-    Renderer(lvk::Device &device, lvk::Pipeline& pipeline, lvk::Swapchain& swapchain);
+    Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<lvk::Pipeline>& pipeline);
     Renderer(Renderer &&other) noexcept;
-    Renderer &operator=(Renderer &&other) noexcept;
 
     void DrawFrame();
 public:
@@ -31,10 +31,9 @@ private:
 
 private:
     static constexpr auto MAX_FRAME_IN_FLIGHT = 2;
-
-    lvk::Device *device_{nullptr};
-    lvk::Pipeline *pipeline_{nullptr};
-    lvk::Swapchain *swapchain_{nullptr};
+    const std::unique_ptr<lvk::Device> &device_;
+    const std::unique_ptr<lvk::Pipeline>& pipeline_;
+    std::unique_ptr<lvk::Swapchain> swapchain_;
 
     std::vector<vk::raii::CommandBuffer> command_buffers_{};
     std::vector<vk::raii::Semaphore> image_available_semaphores_{};
