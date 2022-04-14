@@ -53,22 +53,42 @@ Model::Model(const std::unique_ptr<lvk::Device>& device, const std::vector<Verte
     auto memory_properties = device_->GetPhysicalDevice()->getMemoryProperties();
 
     uint32_t memory_type_index{0};
+    bool found_memory_type{false};
     for (memory_type_index = 0; memory_type_index < memory_properties.memoryTypeCount; memory_type_index++)
     {
         if ((memory_requirements.memoryTypeBits & (1 << memory_type_index)) &&
             (memory_properties.memoryTypes[memory_type_index].propertyFlags & (vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)))
         {
+            found_memory_type = true;
             break;
         }
     }
-    
 
+    if (!found_memory_type)
+    {
+        throw std::runtime_error("not found required device memory");
+    }
+    
+    vk::MemoryAllocateInfo memory_allocate_info
+    {
+        .allocationSize = memory_requirements.size,
+        .memoryTypeIndex = memory_type_index
+    };
+
+    device_memory_ = std::make_unique<vk::raii::DeviceMemory>(device_->GetDevice()->allocateMemory(memory_allocate_info));
+
+    vertex_buffer_->bindMemory(**device_memory_, 0);
+
+    auto data = device_memory_->mapMemory(0, buffer_create_info.size);
+    memcpy(data, vertices.data(), buffer_create_info.size);
+    device_memory_->unmapMemory();
 }
 
 Model::Model(Model &&other) noexcept :
     device_(other.device_)
 {
-
+    this->device_memory_ = std::move(other.device_memory_);
+    this->vertex_buffer_ = std::move(other.vertex_buffer_);
 }
 
 }

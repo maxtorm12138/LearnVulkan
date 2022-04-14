@@ -14,6 +14,7 @@
 
 // module
 #include "lvk_definitions.hpp"
+#include "lvk_model.hpp"
 
 namespace lvk
 {
@@ -95,6 +96,15 @@ void Engine::Run()
 {
     bool running{true};
     bool window_minimized{false};
+
+    const std::vector<Model::Vertex> vertices = 
+    {
+        {{0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}},
+        {{1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.8f, 0.8f}, {0.0f, 0.0f, 1.0f}}
+    };
+
+    lvk::Model model(device_, vertices);
     while(running)
     {
         SDL_Event event;
@@ -123,7 +133,7 @@ void Engine::Run()
 
         if (!window_minimized)
         {
-            renderer_->DrawFrame([this](const vk::raii::CommandBuffer &command_buffer, const std::unique_ptr<vk::raii::RenderPass> &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
+            renderer_->DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const std::unique_ptr<vk::raii::RenderPass> &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
             {
                 command_buffer.reset();
                 vk::CommandBufferBeginInfo command_buffer_begin_info{};
@@ -169,7 +179,13 @@ void Engine::Run()
 
                 command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
                 command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, **this->pipeline_->GetPipeline());
-                command_buffer.draw(3, 1, 0, 0);
+                
+                uint64_t offset= 0;
+                vk::ArrayProxy<const vk::Buffer> buffers(**model.GetVertexBuffer());
+                vk::ArrayProxy<vk::DeviceSize> offsets(offset);
+
+                command_buffer.bindVertexBuffers(0, buffers, offsets);
+                command_buffer.draw(vertices.size(), 1, 0, 0);
                 command_buffer.endRenderPass();
                 command_buffer.end();
             });
