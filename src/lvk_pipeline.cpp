@@ -5,6 +5,10 @@
 
 // fmt
 #include <fmt/format.h>
+
+// module
+#include "lvk_model.hpp"
+
 namespace lvk
 {
 namespace detail
@@ -76,12 +80,15 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
         .pScissors = nullptr
     };
 
+    auto &binding_descriptions = Model::Vertex::GetVertexBindingDescriptions();
+    auto &input_descriptions = Model::Vertex::GetVertexInputAttributeDescriptions();
+
     vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info
     {
-        .vertexBindingDescriptionCount = 0,
-        .pVertexBindingDescriptions = nullptr,
-        .vertexAttributeDescriptionCount = 0,
-        .pVertexAttributeDescriptions = nullptr
+        .vertexBindingDescriptionCount = static_cast<uint32_t>(binding_descriptions.size()),
+        .pVertexBindingDescriptions = binding_descriptions.data(),
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(input_descriptions.size()),
+        .pVertexAttributeDescriptions = input_descriptions.data()
     };
 
     vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info

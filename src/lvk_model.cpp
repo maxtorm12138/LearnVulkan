@@ -37,4 +37,38 @@ const std::vector<vk::VertexInputAttributeDescription> &Model::Vertex::GetVertex
     return vertex_input_attribute_descriptions;
 }
 
+
+Model::Model(const std::unique_ptr<lvk::Device>& device, const std::vector<Vertex> &vertices) :
+    device_(device)
+{
+    vk::BufferCreateInfo buffer_create_info
+    {
+        .size = sizeof(vertices[0]) * vertices.size(),
+        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
+        .sharingMode = vk::SharingMode::eExclusive
+    };
+
+    vertex_buffer_ = std::make_unique<vk::raii::Buffer>(device_->GetDevice()->createBuffer(buffer_create_info));
+    auto memory_requirements = vertex_buffer_->getMemoryRequirements();
+    auto memory_properties = device_->GetPhysicalDevice()->getMemoryProperties();
+
+    uint32_t memory_type_index{0};
+    for (memory_type_index = 0; memory_type_index < memory_properties.memoryTypeCount; memory_type_index++)
+    {
+        if ((memory_requirements.memoryTypeBits & (1 << memory_type_index)) &&
+            (memory_properties.memoryTypes[memory_type_index].propertyFlags & (vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)))
+        {
+            break;
+        }
+    }
+    
+
+}
+
+Model::Model(Model &&other) noexcept :
+    device_(other.device_)
+{
+
+}
+
 }
