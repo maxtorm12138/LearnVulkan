@@ -6,6 +6,12 @@
 namespace lvk
 {
 
+const std::unordered_set<vk::Result> Renderer::WINDOW_RESIZE_ERRORS
+{
+    vk::Result::eErrorOutOfDateKHR,
+    vk::Result::eSuboptimalKHR
+};
+
 Renderer::Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<vk::raii::SurfaceKHR> &surface, const std::unique_ptr<SDL2pp::Window> &window) :
     device_(device),
     surface_(surface),
@@ -55,13 +61,14 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     }
 
     auto [acquire_result, image_index] = swapchain_->GetSwapchain()->acquireNextImage(std::numeric_limits<uint64_t>::max(), *image_available_semaphores_[current_frame_in_flight]);
+    if (WINDOW_RESIZE_ERRORS.contains(acquire_result) || window_resized_)
+    {
+        ReCreateSwapchain();
+        return;
+    }
+
     if (acquire_result != vk::Result::eSuccess)
     {
-        if (acquire_result == vk::Result::eErrorOutOfDateKHR || acquire_result == vk::Result::eSuboptimalKHR)
-        {
-            ReCreateSwapchain();
-            return;
-        }
         throw std::runtime_error(fmt::format("acquireNextImage error result: {}", (int)acquire_result));
     }
 
@@ -99,14 +106,12 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     };
 
     auto present_result = device_->GetCommandQueue()->presentKHR(present_info);
-    if (present_result != vk::Result::eSuccess)
+    if (WINDOW_RESIZE_ERRORS.contains(present_result) || window_resized_)
     {
-        if (present_result == vk::Result::eErrorOutOfDateKHR || present_result == vk::Result::eSuboptimalKHR)
-        {
-            ReCreateSwapchain();
-            return;
-        }
+        ReCreateSwapchain();
+        return;
     }
+
     frame_counter_++;
 }
 
@@ -115,6 +120,13 @@ void Renderer::ReCreateSwapchain()
     device_->GetDevice()->waitIdle();
     std::shared_ptr<lvk::Swapchain> old_swapchain(swapchain_.release());
     swapchain_ = std::make_unique<lvk::Swapchain>(device_, surface_, window_, old_swapchain);
+    window_resized_ = false;
+}
+
+
+void Renderer::NotifyWindowResized()
+{
+    window_resized_ = true;
 }
 
 }

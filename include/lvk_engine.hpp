@@ -28,9 +28,7 @@ public:
     Engine();
     void Run();
 private:
-    static int SDLCALL SDLEventFilter(void *userdata, SDL_Event *event);
     void ConstructInstance();
-    void NotifyWindowResized();
 private:
     std::unique_ptr<SDL2pp::SDL> sdl_;
     std::unique_ptr<SDL2pp::Window> window_;
@@ -46,8 +44,6 @@ private:
     std::unique_ptr<lvk::Device> device_;
     std::unique_ptr<lvk::Renderer> renderer_;
     std::unique_ptr<lvk::Pipeline> pipeline_;
-
-    std::atomic<bool> window_resized_{false};
 };
 
 };
