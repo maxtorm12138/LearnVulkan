@@ -113,12 +113,10 @@ void Engine::Run()
                 else if (event.window.event == SDL_WINDOWEVENT_MINIMIZED)
                 {
                     window_minimized = true;
-                    BOOST_LOG_TRIVIAL(info) << "window minimized";
                 }
                 else if (event.window.event == SDL_WINDOWEVENT_RESTORED || event.window.event == SDL_WINDOWEVENT_SHOWN)
                 {
                     window_minimized = false;
-                    BOOST_LOG_TRIVIAL(info) << "window restored";
                 }
             }
         }
