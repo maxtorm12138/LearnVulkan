@@ -29,6 +29,8 @@ public:
     const std::unique_ptr<vk::raii::Buffer> &GetVertexBuffer() const { return vertex_buffer_; }
     uint32_t GetVertexCount() const { return vertex_count_; }
 
+    void BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer);
+    void Draw(const vk::raii::CommandBuffer &command_buffer);
 private:
     const std::unique_ptr<lvk::Device>& device_;
 

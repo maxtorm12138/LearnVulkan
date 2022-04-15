@@ -127,9 +127,9 @@ void EngineImpl::Run()
 
     const std::vector<Vertex> vertices = 
     {
-        {{0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}},
-        {{1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-        {{0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}
+        {{0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}},
+        {{1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}},
+        {{-1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}}
     };
 
     lvk::Model model(device_, vertices);
@@ -207,13 +207,8 @@ void EngineImpl::Run()
 
                 command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
                 command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, **pipeline_->GetPipeline());
-                
-                uint64_t offset= 0;
-                vk::ArrayProxy<const vk::Buffer> buffers(**model.GetVertexBuffer());
-                vk::ArrayProxy<vk::DeviceSize> offsets(offset);
-
-                command_buffer.bindVertexBuffers(0, buffers, offsets);
-                command_buffer.draw(vertices.size(), 1, 0, 0);
+                model.BindVertexBuffers(command_buffer);
+                model.Draw(command_buffer);
                 command_buffer.endRenderPass();
                 command_buffer.end();
             });

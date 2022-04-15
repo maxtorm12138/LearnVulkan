@@ -57,4 +57,17 @@ Model::Model(Model &&other) noexcept :
     this->vertex_buffer_ = std::move(other.vertex_buffer_);
 }
 
+void Model::Draw(const vk::raii::CommandBuffer &command_buffer)
+{
+    command_buffer.draw(vertex_count_, 1, 0, 0);
+}
+
+void Model::BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer)
+{
+    uint64_t offset = 0;
+    vk::ArrayProxy<const vk::Buffer> buffers(**vertex_buffer_);
+    vk::ArrayProxy<vk::DeviceSize> offsets(offset);
+
+    command_buffer.bindVertexBuffers(0, buffers, offsets);
+}
 }

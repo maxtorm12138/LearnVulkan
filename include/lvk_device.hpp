@@ -3,9 +3,7 @@
 #include <boost/noncopyable.hpp>
 
 // vulkan
-#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
-#include <vulkan/vulkan_structs.hpp>
 
 // SDL2pp
 #include <SDL2pp/SDL2pp.hh>
