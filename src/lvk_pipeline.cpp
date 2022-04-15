@@ -7,7 +7,7 @@
 #include <fmt/format.h>
 
 // module
-#include "lvk_model.hpp"
+#include "lvk_vertex.hpp"
 
 namespace lvk
 {
@@ -80,8 +80,8 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
         .pScissors = nullptr
     };
 
-    auto &binding_descriptions = Model::Vertex::GetVertexBindingDescriptions();
-    auto &input_descriptions = Model::Vertex::GetVertexInputAttributeDescriptions();
+    auto &binding_descriptions = Vertex::GetVertexBindingDescriptions();
+    auto &input_descriptions = Vertex::GetVertexInputAttributeDescriptions();
 
     vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info
     {

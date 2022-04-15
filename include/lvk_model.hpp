@@ -15,24 +15,19 @@
 
 // module
 #include "lvk_device.hpp"
+#include "lvk_vertex.hpp"
 
 namespace lvk
 {
 class Model : public boost::noncopyable
 {
 public:
-    struct Vertex
-    {
-        glm::vec2 posision;
-        glm::vec3 color;
-        static const std::vector<vk::VertexInputBindingDescription> &GetVertexBindingDescriptions();
-        static const std::vector<vk::VertexInputAttributeDescription> &GetVertexInputAttributeDescriptions();
-    };
 
     Model(const std::unique_ptr<lvk::Device>& device, const std::vector<Vertex> &vertices);
     Model(Model &&other) noexcept;
 public:
-    const std::unique_ptr<vk::raii::Buffer> &GetVertexBuffer() { return vertex_buffer_; }
+    const std::unique_ptr<vk::raii::Buffer> &GetVertexBuffer() const { return vertex_buffer_; }
+    uint32_t GetVertexCount() const { return vertex_count_; }
 
 private:
     const std::unique_ptr<lvk::Device>& device_;
