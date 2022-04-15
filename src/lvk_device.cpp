@@ -11,26 +11,51 @@
 
 namespace lvk
 {
+namespace detail
+{
 
-Device::Device(std::nullptr_t) {}
+class DeviceImpl : public boost::noncopyable
+{
+public:
+    DeviceImpl(std::nullptr_t);
+    DeviceImpl(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface);
 
-Device::Device(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface)
+public:
+    const std::unique_ptr<vk::raii::Device> &GetDevice() const;
+    uint32_t GetCommandQueueIndex() const;
+    const std::unique_ptr<vk::raii::Queue> &GetCommandQueue() const;
+    const std::unique_ptr<vk::raii::CommandPool> &GetCommandPool() const;
+    const std::unique_ptr<vk::raii::PhysicalDevice> &GetPhysicalDevice() const;
+
+private:
+    friend class ::lvk::Device;
+
+private:
+    void PickPhysicalDevice(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface);
+    void ConstructDevice();
+    void ConstructCommandPool();
+
+private:
+    std::unique_ptr<vk::raii::PhysicalDevice> physical_device_;
+    std::unique_ptr<vk::raii::Device> device_;
+    uint32_t command_queue_index_;
+    std::unique_ptr<vk::raii::Queue> command_queue_;
+    std::unique_ptr<vk::raii::CommandPool> command_pool_;
+};
+
+void DeviceImplDeleter::operator()(DeviceImpl *ptr)
+{
+    delete ptr;
+}
+
+DeviceImpl::DeviceImpl(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface)
 {
     PickPhysicalDevice(instance, surface);
     ConstructDevice();
     ConstructCommandPool();
 }
 
-Device::Device(Device&& other) noexcept
-{
-    this->physical_device_ = std::move(other.physical_device_);
-    this->command_queue_index_ = std::move(other.command_queue_index_);
-    this->device_ = std::move(other.device_);
-    this->command_queue_ = std::move(other.command_queue_);
-    this->command_pool_ = std::move(other.command_pool_);
-}
-
-void Device::PickPhysicalDevice(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface)
+void DeviceImpl::PickPhysicalDevice(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface)
 {
     const std::unordered_set<std::string_view> REQUIRED_DEVICE_EXTENSION
     {
@@ -103,7 +128,7 @@ void Device::PickPhysicalDevice(const std::unique_ptr<vk::raii::Instance> &insta
 
 }
 
-void Device::ConstructDevice()
+void DeviceImpl::ConstructDevice()
 {
     const std::unordered_set<std::string_view> REQUIRED_DEVICE_EXTENSION
     {
@@ -146,7 +171,7 @@ void Device::ConstructDevice()
     command_queue_ = std::make_unique<vk::raii::Queue>(device_->getQueue(command_queue_index_, 0));
 }
 
-void Device::ConstructCommandPool()
+void DeviceImpl::ConstructCommandPool()
 {
     vk::CommandPoolCreateInfo command_pool_create_info
     {
@@ -157,29 +182,39 @@ void Device::ConstructCommandPool()
     command_pool_ = std::make_unique<vk::raii::CommandPool>(*device_, command_pool_create_info);
 }
 
+}
+Device::Device(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface) {
+    impl_.reset(new detail::DeviceImpl(instance, surface));
+}
+
+Device::Device(Device&& other) noexcept :
+    impl_(std::move(other.impl_))
+{
+}
+
 const std::unique_ptr<vk::raii::Device> &Device::GetDevice() const 
 {
-    return device_;
+    return impl_->device_;
 }
 
 uint32_t Device::GetCommandQueueIndex() const
 {
-    return command_queue_index_;
+    return impl_->command_queue_index_;
 }
 
 const std::unique_ptr<vk::raii::Queue> &Device::GetCommandQueue() const
 {
-    return command_queue_;
+    return impl_->command_queue_;
 }
 
 const std::unique_ptr<vk::raii::CommandPool> &Device::GetCommandPool() const
 {
-    return command_pool_;
+    return impl_->command_pool_;
 }
 
 const std::unique_ptr<vk::raii::PhysicalDevice> &Device::GetPhysicalDevice() const
 {
-    return physical_device_;
+    return impl_->physical_device_;
 }
 
 }// namespace lvk

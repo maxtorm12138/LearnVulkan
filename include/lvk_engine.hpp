@@ -3,22 +3,28 @@
 // boost
 #include <boost/noncopyable.hpp>
 
+// std
+#include <memory>
+
 namespace lvk
 {
 namespace detail
 {
 class EngineImpl;
+struct EngineImplDeleter
+{
+    void operator()(EngineImpl *ptr);
+};
 }
 
 class Engine : public boost::noncopyable
 {
 public:
     Engine();
-    ~Engine();
 
     void Run();
 private:
-    detail::EngineImpl *impl_;
+    std::unique_ptr<detail::EngineImpl, detail::EngineImplDeleter> impl_;
 };
 
 };

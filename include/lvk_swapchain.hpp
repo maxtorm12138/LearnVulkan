@@ -8,6 +8,9 @@
 #include <vulkan/vulkan_raii.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
+// SDLpp
+#include <SDL2pp/SDL2pp.hh>
+
 // self
 #include "lvk_device.hpp"
 

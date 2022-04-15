@@ -8,6 +8,7 @@
 
 // SDL
 #include <SDL_vulkan.h>
+#include <SDL2pp/SDL2pp.hh>
 
 // fmt
 #include <fmt/format.h>
@@ -94,6 +95,11 @@ private:
     std::unique_ptr<lvk::Renderer> renderer_;
     std::unique_ptr<lvk::Pipeline> pipeline_;
 };
+
+void EngineImplDeleter::operator()(EngineImpl *ptr)
+{
+    delete ptr;
+}
 
 EngineImpl::EngineImpl()
 {
@@ -329,11 +335,6 @@ void EngineImpl::ConstructInstance()
 
 Engine::Engine() : impl_(new detail::EngineImpl)
 {
-}
-
-Engine::~Engine()
-{
-    delete impl_;
 }
 
 void Engine::Run()
