@@ -51,8 +51,8 @@ target_compile_definitions(lvk PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVUL
 target_add_shader(lvk triangle.frag)
 target_add_shader(lvk triangle.vert)
 target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} ${SDL2PP_INCLUDE_DIRS} include/)
-target_link_libraries(lvk PUBLIC ${SDL2PP_LIBRARIES} Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
+target_link_libraries(lvk PRIVATE ${SDL2PP_LIBRARIES} Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
 
 add_executable(draw_triangle src/draw_triangle.cpp)
-target_include_directories(draw_triangle PRIVATE ${SDL2PP_INCLUDE_DIRS} include/)
+target_include_directories(draw_triangle PRIVATE include/)
 target_link_libraries(draw_triangle PRIVATE lvk Boost::log)

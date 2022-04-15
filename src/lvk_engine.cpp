@@ -16,6 +16,10 @@
 #include "lvk_definitions.hpp"
 #include "lvk_model.hpp"
 #include "lvk_vertex.hpp"
+#include "lvk_pipeline.hpp"
+#include "lvk_renderer.hpp"
+#include "lvk_device.hpp"
+
 namespace lvk
 {
 namespace detail
@@ -65,9 +69,33 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     }
     return VK_FALSE;
 }
-}
 
-Engine::Engine()
+class EngineImpl
+{
+public:
+    EngineImpl();
+    void Run();
+private:
+    void ConstructInstance();
+
+private:
+    std::unique_ptr<SDL2pp::SDL> sdl_;
+    std::unique_ptr<SDL2pp::Window> window_;
+
+    vk::raii::Context context_;
+    std::unique_ptr<vk::raii::Instance> instance_;
+
+    #ifndef NDEBUG
+    std::unique_ptr<vk::raii::DebugUtilsMessengerEXT> debug_messenger_;
+    #endif
+
+    std::unique_ptr<vk::raii::SurfaceKHR> surface_;
+    std::unique_ptr<lvk::Device> device_;
+    std::unique_ptr<lvk::Renderer> renderer_;
+    std::unique_ptr<lvk::Pipeline> pipeline_;
+};
+
+EngineImpl::EngineImpl()
 {
     sdl_ = std::make_unique<SDL2pp::SDL>(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
     window_ = std::make_unique<SDL2pp::Window>(
@@ -92,7 +120,7 @@ Engine::Engine()
     pipeline_ = std::make_unique<lvk::Pipeline>(device_, renderer_->GetSwapchain()->GetRenderPass());
 }
 
-void Engine::Run()
+void EngineImpl::Run()
 {
     bool running{true};
     bool window_minimized{false};
@@ -198,7 +226,7 @@ void Engine::Run()
     device_->GetDevice()->waitIdle();
 }
 
-void Engine::ConstructInstance()
+void EngineImpl::ConstructInstance()
 {
     #ifndef NDEBUG
     std::unordered_set<std::string_view> REQUIRED_LAYERS{LAYER_NAME_VK_LAYER_KHRONOS_validation};
@@ -286,7 +314,7 @@ void Engine::ConstructInstance()
         {
             .messageSeverity = message_severity,
             .messageType = message_type,
-            .pfnUserCallback = &detail::DebugCallback
+            .pfnUserCallback = &DebugCallback
         }
     };
 
@@ -299,6 +327,22 @@ void Engine::ConstructInstance()
     #ifndef NDEBUG
     debug_messenger_ = std::make_unique<vk::raii::DebugUtilsMessengerEXT>(*instance_, chain.get<vk::DebugUtilsMessengerCreateInfoEXT>());
     #endif
+}
+
+}
+
+Engine::Engine() : impl_(new detail::EngineImpl)
+{
+}
+
+Engine::~Engine()
+{
+    delete impl_;
+}
+
+void Engine::Run()
+{
+    return impl_->Run();
 }
 
 }

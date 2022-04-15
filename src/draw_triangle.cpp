@@ -5,7 +5,9 @@
 
 // std
 #include <exception>
+#include <iostream>
 
+// module
 #include "lvk_engine.hpp"
 
 void init_log()
