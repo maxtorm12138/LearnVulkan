@@ -39,7 +39,8 @@ const std::vector<vk::VertexInputAttributeDescription> &Model::Vertex::GetVertex
 
 
 Model::Model(const std::unique_ptr<lvk::Device>& device, const std::vector<Vertex> &vertices) :
-    device_(device)
+    device_(device),
+    vertex_count_(vertices.size())
 {
     vk::BufferCreateInfo buffer_create_info
     {
@@ -85,7 +86,8 @@ Model::Model(const std::unique_ptr<lvk::Device>& device, const std::vector<Verte
 }
 
 Model::Model(Model &&other) noexcept :
-    device_(other.device_)
+    device_(other.device_),
+    vertex_count_(other.vertex_count_)
 {
     this->device_memory_ = std::move(other.device_memory_);
     this->vertex_buffer_ = std::move(other.vertex_buffer_);

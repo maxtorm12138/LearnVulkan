@@ -33,9 +33,12 @@ public:
     Model(Model &&other) noexcept;
 public:
     const std::unique_ptr<vk::raii::Buffer> &GetVertexBuffer() { return vertex_buffer_; }
+
 private:
     const std::unique_ptr<lvk::Device>& device_;
+
     std::unique_ptr<vk::raii::DeviceMemory> device_memory_;
     std::unique_ptr<vk::raii::Buffer> vertex_buffer_;
+    uint32_t vertex_count_;
 };
 }
