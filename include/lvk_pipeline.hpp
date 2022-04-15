@@ -19,7 +19,10 @@ class Pipeline : public boost::noncopyable
 public:
     Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique_ptr<vk::raii::RenderPass> &render_pass);
     Pipeline(Pipeline&& other) noexcept;
+
+    void BindPipeline(const vk::raii::CommandBuffer &command_buffer);
 public:
+
     const std::unique_ptr<vk::raii::Pipeline> &GetPipeline() const;
 private:
     const std::unique_ptr<lvk::Device>& device_;

@@ -206,9 +206,10 @@ void EngineImpl::Run()
                 };
 
                 command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
-                command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, **pipeline_->GetPipeline());
+                pipeline_->BindPipeline(command_buffer);
                 model.BindVertexBuffers(command_buffer);
                 model.Draw(command_buffer);
+
                 command_buffer.endRenderPass();
                 command_buffer.end();
             });

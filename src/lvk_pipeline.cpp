@@ -201,4 +201,9 @@ const std::unique_ptr<vk::raii::Pipeline> &Pipeline::GetPipeline() const
     return pipeline_;
 }
 
+void Pipeline::BindPipeline(const vk::raii::CommandBuffer &command_buffer)
+{
+    command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, **pipeline_);
+}
+
 }// namespace lvk
