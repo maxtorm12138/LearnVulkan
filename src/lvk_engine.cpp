@@ -206,7 +206,7 @@ void EngineImpl::Run()
                 };
 
                 command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
-                command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, **this->pipeline_->GetPipeline());
+                command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, **pipeline_->GetPipeline());
                 
                 uint64_t offset= 0;
                 vk::ArrayProxy<const vk::Buffer> buffers(**model.GetVertexBuffer());
