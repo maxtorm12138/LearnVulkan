@@ -15,7 +15,7 @@
 // module
 #include "lvk_definitions.hpp"
 #include "lvk_model.hpp"
-
+#include "lvk_vertex.hpp"
 namespace lvk
 {
 namespace detail
@@ -97,11 +97,11 @@ void Engine::Run()
     bool running{true};
     bool window_minimized{false};
 
-    const std::vector<Model::Vertex> vertices = 
+    const std::vector<Vertex> vertices = 
     {
         {{0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}},
         {{1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.8f, 0.8f}, {0.0f, 0.0f, 1.0f}}
+        {{0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}
     };
 
     lvk::Model model(device_, vertices);

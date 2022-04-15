@@ -1,7 +1,7 @@
 #include "lvk_vertex.hpp"
 namespace lvk
 {
-const std::vector<vk::VertexInputBindingDescription> & Vertex::GetVertexBindingDescriptions()
+const std::vector<vk::VertexInputBindingDescription> &Vertex::GetVertexBindingDescriptions()
 {
     static std::vector<vk::VertexInputBindingDescription> vertex_binding_descriptions
     {
