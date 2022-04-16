@@ -5,6 +5,7 @@
 
 // std
 #include <unordered_set>
+#include <thread>
 
 // SDL
 #include <SDL_vulkan.h>
@@ -71,15 +72,22 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     return VK_FALSE;
 }
 
+const std::vector<Vertex> vertices = 
+{
+    {{0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}},
+    {{1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}},
+    {{-1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}}
+};
+
 class EngineImpl
 {
 public:
     EngineImpl();
     void Run();
-private:
-    void ConstructInstance();
 
-private:
+    void ConstructInstance();
+    int NotifyWindowEvent(SDL_Event *event);
+
     std::unique_ptr<SDL2pp::SDL> sdl_;
     std::unique_ptr<SDL2pp::Window> window_;
 
@@ -94,6 +102,7 @@ private:
     std::unique_ptr<lvk::Device> device_;
     std::unique_ptr<lvk::Renderer> renderer_;
     std::unique_ptr<lvk::Pipeline> pipeline_;
+    std::unique_ptr<lvk::Model> model_;
 };
 
 void EngineImplDeleter::operator()(EngineImpl *ptr)
@@ -105,7 +114,7 @@ EngineImpl::EngineImpl()
 {
     sdl_ = std::make_unique<SDL2pp::SDL>(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
     window_ = std::make_unique<SDL2pp::Window>(
-        "Hello Vulkan",
+        "HelloVulkan",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         800,
@@ -122,110 +131,107 @@ EngineImpl::EngineImpl()
 
     surface_ = std::make_unique<vk::raii::SurfaceKHR>(*instance_, surface);
     device_ = std::make_unique<lvk::Device>(instance_, surface_);
-    renderer_ = std::make_unique<lvk::Renderer>(device_, surface_, window_);
+    renderer_ = std::make_unique<lvk::Renderer>(device_, window_);
     pipeline_ = std::make_unique<lvk::Pipeline>(device_, renderer_->GetSwapchain()->GetRenderPass());
+    model_ = std::make_unique<lvk::Model>(device_, vertices);
 }
 
 void EngineImpl::Run()
 {
+
     bool running{true};
     bool window_minimized{false};
-
-    const std::vector<Vertex> vertices = 
+    SDL_Event event;
+    while (running)
     {
-        {{0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}},
-        {{1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}},
-        {{-1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}}
-    };
-
-    lvk::Model model(device_, vertices);
-    while(running)
-    {
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
+        while(SDL_PollEvent(&event))
         {
-            if (event.type == SDL_QUIT)
+            switch(event.type)
             {
-                running = false;
-            }
-            else if (event.type == SDL_WINDOWEVENT)
-            {
-                if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-                {
-                    renderer_->NotifyWindowResized();   
-                }
-                else if (event.window.event == SDL_WINDOWEVENT_MINIMIZED)
-                {
-                    window_minimized = true;
-                }
-                else if (event.window.event == SDL_WINDOWEVENT_RESTORED || event.window.event == SDL_WINDOWEVENT_SHOWN)
-                {
-                    window_minimized = false;
-                }
+                case SDL_QUIT:
+                    running = false;
+                    break;
+                case SDL_WINDOWEVENT:
+                    switch (event.window.event) 
+                    {
+                        case SDL_WINDOWEVENT_RESIZED:
+                            renderer_->NotifyWindowResized();
+                            break;
+                        case SDL_WINDOWEVENT_MINIMIZED:
+                            window_minimized = true;
+                            break;
+                        case SDL_WINDOWEVENT_RESTORED:
+                        case SDL_WINDOWEVENT_SHOWN:
+                            window_minimized = false;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
 
-        if (!window_minimized)
+        if (window_minimized)
         {
-            renderer_->DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const std::unique_ptr<vk::raii::RenderPass> &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
+            SDL_Delay(1);
+            continue;
+        }
+
+        renderer_->DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const std::unique_ptr<vk::raii::RenderPass> &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
+        {
+            command_buffer.reset();
+            vk::CommandBufferBeginInfo command_buffer_begin_info{};
+            command_buffer.begin(command_buffer_begin_info);
+
+            // set viewport
+            vk::Viewport viewport
             {
-                command_buffer.reset();
-                vk::CommandBufferBeginInfo command_buffer_begin_info{};
-                command_buffer.begin(command_buffer_begin_info);
+                .x = 0,
+                .y = 0,
+                .width = static_cast<float>(window_extent.width),
+                .height = static_cast<float>(window_extent.height)
+            };
+            vk::ArrayProxy<const vk::Viewport> viewports(viewport);
+            command_buffer.setViewport(0, viewports);
 
-                // set viewport
-                vk::Viewport viewport
-                {
-                    .x = 0,
-                    .y = 0,
-                    .width = static_cast<float>(window_extent.width),
-                    .height = static_cast<float>(window_extent.height)
-                };
-                vk::ArrayProxy<const vk::Viewport> viewports(viewport);
-                command_buffer.setViewport(0, viewports);
+            // set scissor
+            vk::Rect2D scissor
+            {
+                .offset = {0, 0},
+                .extent = window_extent,
+            };
 
-                // set scissor
-                vk::Rect2D scissor
+            vk::ArrayProxy<const vk::Rect2D> scissors(scissor);
+            command_buffer.setScissor(0, scissors);
+
+
+            vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
+            vk::ClearValue clear_value;
+            clear_value.color = clear_color;
+            vk::RenderPassBeginInfo render_pass_begin_info
+            {
+                .renderPass = **render_pass,
+                .framebuffer = *frame_buffer,
+                .renderArea
                 {
                     .offset = {0, 0},
                     .extent = window_extent,
-                };
+                },
+                .clearValueCount = 1,
+                .pClearValues = &clear_value
+            };
 
-                vk::ArrayProxy<const vk::Rect2D> scissors(scissor);
-                command_buffer.setScissor(0, scissors);
+            command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
+            pipeline_->BindPipeline(command_buffer);
+            model_->BindVertexBuffers(command_buffer);
+            model_->Draw(command_buffer);
 
-
-                vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
-                vk::ClearValue clear_value;
-                clear_value.color = clear_color;
-                vk::RenderPassBeginInfo render_pass_begin_info
-                {
-                    .renderPass = **render_pass,
-                    .framebuffer = *frame_buffer,
-                    .renderArea
-                    {
-                        .offset = {0, 0},
-                        .extent = window_extent,
-                    },
-                    .clearValueCount = 1,
-                    .pClearValues = &clear_value
-                };
-
-                command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
-                pipeline_->BindPipeline(command_buffer);
-                model.BindVertexBuffers(command_buffer);
-                model.Draw(command_buffer);
-
-                command_buffer.endRenderPass();
-                command_buffer.end();
-            });
-        }
-        else
-        {
-            SDL_Delay(1);
-        }
+            command_buffer.endRenderPass();
+            command_buffer.end();
+        });
     }
-    device_->GetDevice()->waitIdle();
 }
 
 void EngineImpl::ConstructInstance()
@@ -341,5 +347,6 @@ void Engine::Run()
 {
     return impl_->Run();
 }
+
 
 }

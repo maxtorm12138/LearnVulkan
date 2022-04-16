@@ -18,11 +18,18 @@
 
 namespace lvk
 {
+
+struct WindowEventFlags
+{
+    std::atomic<bool> window_resized_{false};
+    std::atomic<bool> window_minimized_{false};
+};
+
 class Renderer : public boost::noncopyable
 {
 public:
     Renderer(std::nullptr_t);
-    Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<vk::raii::SurfaceKHR> &surface, const std::unique_ptr<SDL2pp::Window> &window);
+    Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<SDL2pp::Window> &window);
     Renderer(Renderer &&other) noexcept;
     
     using RecordCommandBufferCallback = std::function<void(const vk::raii::CommandBuffer &command_buffer, const std::unique_ptr<vk::raii::RenderPass> &render_pass, const vk::raii::Framebuffer &, vk::Extent2D)>;
@@ -32,8 +39,10 @@ public:
     [[nodiscard]] uint64_t GetFrameCounter() const { return frame_counter_; }
     [[nodiscard]] const std::unique_ptr<lvk::Swapchain> &GetSwapchain() const { return swapchain_; }
     void NotifyWindowResized();
+
 private:
     void ReCreateSwapchain();
+
 private:
     static constexpr auto MAX_FRAME_IN_FLIGHT = 2;
     static const std::unordered_set<vk::Result> WINDOW_RESIZE_ERRORS;
@@ -49,7 +58,7 @@ private:
     std::vector<vk::raii::Semaphore> render_finishend_semaphores_{};
     std::vector<vk::raii::Fence> in_flight_fences_{};
     uint64_t frame_counter_{0};
-    std::atomic<bool> window_resized_{false};
+    WindowEventFlags window_event_flags_;
 };
 
 }

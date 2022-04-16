@@ -20,8 +20,7 @@ int main(int, char* argv[])
     try
     {
         init_log();
-        lvk::Engine engine;
-        engine.Run();
+        lvk::Engine().Run();
     }
     catch (std::exception& e)
     {

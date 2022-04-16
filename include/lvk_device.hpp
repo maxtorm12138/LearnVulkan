@@ -1,4 +1,5 @@
 #pragma once
+
 // boost
 #include <boost/noncopyable.hpp>
 
@@ -26,9 +27,10 @@ class Device : public boost::noncopyable
 {
 public:
     Device(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface);
-    Device(Device&& other) noexcept;
 
 public:
+    const std::unique_ptr<vk::raii::Instance> &GetInstance() const;
+    const std::unique_ptr<vk::raii::SurfaceKHR> &GetSurface() const;
     const std::unique_ptr<vk::raii::Device> &GetDevice() const;
     uint32_t GetCommandQueueIndex() const;
     const std::unique_ptr<vk::raii::Queue> &GetCommandQueue() const;

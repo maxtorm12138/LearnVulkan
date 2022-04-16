@@ -12,12 +12,12 @@ const std::unordered_set<vk::Result> Renderer::WINDOW_RESIZE_ERRORS
     vk::Result::eSuboptimalKHR
 };
 
-Renderer::Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<vk::raii::SurfaceKHR> &surface, const std::unique_ptr<SDL2pp::Window> &window) :
+Renderer::Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<SDL2pp::Window> &window) :
     device_(device),
-    surface_(surface),
+    surface_(device->GetSurface()),
     window_(window)
 {
-    swapchain_ = std::make_unique<lvk::Swapchain>(device, surface, window);
+    swapchain_ = std::make_unique<lvk::Swapchain>(device, window);
     vk::CommandBufferAllocateInfo command_buffer_allocate_info
     {
         .commandPool = **device_->GetCommandPool(),
@@ -61,7 +61,7 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     }
 
     auto [acquire_result, image_index] = swapchain_->GetSwapchain()->acquireNextImage(std::numeric_limits<uint64_t>::max(), *image_available_semaphores_[current_frame_in_flight]);
-    if (WINDOW_RESIZE_ERRORS.contains(acquire_result) || window_resized_)
+    if (WINDOW_RESIZE_ERRORS.contains(acquire_result) || window_event_flags_.window_resized_)
     {
         ReCreateSwapchain();
         return;
@@ -106,7 +106,7 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     };
 
     auto present_result = device_->GetCommandQueue()->presentKHR(present_info);
-    if (WINDOW_RESIZE_ERRORS.contains(present_result) || window_resized_)
+    if (WINDOW_RESIZE_ERRORS.contains(present_result) || window_event_flags_.window_resized_)
     {
         ReCreateSwapchain();
         return;
@@ -119,14 +119,7 @@ void Renderer::ReCreateSwapchain()
 {
     device_->GetDevice()->waitIdle();
     std::shared_ptr<lvk::Swapchain> old_swapchain(swapchain_.release());
-    swapchain_ = std::make_unique<lvk::Swapchain>(device_, surface_, window_, old_swapchain);
-    window_resized_ = false;
+    swapchain_ = std::make_unique<lvk::Swapchain>(device_, window_, old_swapchain);
+    window_event_flags_.window_resized_ = false;
 }
-
-
-void Renderer::NotifyWindowResized()
-{
-    window_resized_ = true;
-}
-
 }

@@ -20,27 +20,27 @@ public:
     DeviceImpl(std::nullptr_t);
     DeviceImpl(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface);
 
-public:
     const std::unique_ptr<vk::raii::Device> &GetDevice() const;
     uint32_t GetCommandQueueIndex() const;
     const std::unique_ptr<vk::raii::Queue> &GetCommandQueue() const;
     const std::unique_ptr<vk::raii::CommandPool> &GetCommandPool() const;
     const std::unique_ptr<vk::raii::PhysicalDevice> &GetPhysicalDevice() const;
 
-private:
-    friend class ::lvk::Device;
-
-private:
-    void PickPhysicalDevice(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface);
+    void PickPhysicalDevice();
     void ConstructDevice();
     void ConstructCommandPool();
 
-private:
+    const std::unique_ptr<vk::raii::Instance> &instance_;
+    const std::unique_ptr<vk::raii::SurfaceKHR> &surface_;
+
     std::unique_ptr<vk::raii::PhysicalDevice> physical_device_;
     std::unique_ptr<vk::raii::Device> device_;
     uint32_t command_queue_index_;
     std::unique_ptr<vk::raii::Queue> command_queue_;
     std::unique_ptr<vk::raii::CommandPool> command_pool_;
+    std::vector<vk::SurfaceFormatKHR> surface_formats_;
+    std::vector<vk::PresentModeKHR> present_modes_;
+    vk::SurfaceCapabilitiesKHR surface_capabilities_;
 };
 
 void DeviceImplDeleter::operator()(DeviceImpl *ptr)
@@ -48,14 +48,18 @@ void DeviceImplDeleter::operator()(DeviceImpl *ptr)
     delete ptr;
 }
 
-DeviceImpl::DeviceImpl(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface)
+DeviceImpl::DeviceImpl(
+    const std::unique_ptr<vk::raii::Instance> &instance,
+    const std::unique_ptr<vk::raii::SurfaceKHR> &surface) :
+    instance_(instance),
+    surface_(surface)
 {
-    PickPhysicalDevice(instance, surface);
+    PickPhysicalDevice();
     ConstructDevice();
     ConstructCommandPool();
 }
 
-void DeviceImpl::PickPhysicalDevice(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface)
+void DeviceImpl::PickPhysicalDevice()
 {
     const std::unordered_set<std::string_view> REQUIRED_DEVICE_EXTENSION
     {
@@ -67,65 +71,73 @@ void DeviceImpl::PickPhysicalDevice(const std::unique_ptr<vk::raii::Instance> &i
         return REQUIRED_DEVICE_EXTENSION.contains(extension) || extension == EXT_NAME_VK_KHR_portability_subset;
     };
 
-    for (auto &physical_device : instance->enumeratePhysicalDevices())
-    {
-        auto properties = physical_device.getProperties();
-        auto features = physical_device.getFeatures();
-
-        if (properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu)
+    auto physical_devices = instance_->enumeratePhysicalDevices();
+    auto selected_physical_device = std::find_if(
+        physical_devices.begin(), physical_devices.end(), 
+        [&](const vk::raii::PhysicalDevice &physical_device) 
         {
-            continue;
-        }
+            auto properties = physical_device.getProperties();
+            auto features = physical_device.getFeatures();
 
-        if (!features.tessellationShader)
-        {
-            continue;
-        }
-
-        // check required extensions
-        std::vector<const char *> enable_device_extensions_view;
-        auto extension_props = physical_device.enumerateDeviceExtensionProperties();
-        std::vector<const char *> extensions;
-        std::transform(extension_props.begin(), extension_props.end(), std::back_inserter(extensions), [](auto &&prop) { return prop.extensionName.data(); });
-        std::copy_if(extensions.begin(), extensions.end(), std::back_inserter(enable_device_extensions_view), is_opt_or_req_ext);
-
-        if (enable_device_extensions_view.size() < REQUIRED_DEVICE_EXTENSION.size())
-        {
-            continue;
-        }
-
-        uint32_t queue_family_index{0};
-        bool found_queue_family{false};
-        for (const auto &queue_family_property : physical_device.getQueueFamilyProperties())
-        {
-            if ((queue_family_property.queueFlags & vk::QueueFlagBits::eGraphics) && physical_device.getSurfaceSupportKHR(queue_family_index, **surface))
+            if (properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu)
             {
-                command_queue_index_ = queue_family_index;
-                found_queue_family = true;
-                break;
+                return false;
             }
-            queue_family_index++;
-        }
 
-        if (!found_queue_family)
-        {
-            continue;
-        }
-        
-        if (physical_device.getSurfacePresentModesKHR(**surface).empty() || physical_device.getSurfaceFormatsKHR(**surface).empty())
-        {
-            continue;
-        }
+            if (!features.tessellationShader)
+            {
+                return false;
+            }
 
-        physical_device_ = std::make_unique<vk::raii::PhysicalDevice>(std::move(physical_device));
-        break;
-    }
+            // check required extensions
+            std::vector<const char *> enable_device_extensions_view;
+            auto extension_props = physical_device.enumerateDeviceExtensionProperties();
+            std::vector<const char *> extensions;
+            std::transform(extension_props.begin(), extension_props.end(), std::back_inserter(extensions), [](auto &&prop) { return prop.extensionName.data(); });
+            std::copy_if(extensions.begin(), extensions.end(), std::back_inserter(enable_device_extensions_view), is_opt_or_req_ext);
 
-    if (physical_device_ == nullptr)
+            if (enable_device_extensions_view.size() < REQUIRED_DEVICE_EXTENSION.size())
+            {
+                return false;
+            }
+
+            uint32_t index{0};
+            bool found{false};
+            for (const auto &queue_family_property : physical_device.getQueueFamilyProperties())
+            {
+                if ((queue_family_property.queueFlags & vk::QueueFlagBits::eGraphics) && physical_device.getSurfaceSupportKHR(index, **surface_))
+                {
+                    found = true;
+                    break;
+                }
+                index++;
+            }
+
+            if (!found)
+            {
+                return false;
+            }
+
+            command_queue_index_ = index;
+
+            surface_capabilities_ = physical_device.getSurfaceCapabilitiesKHR(**surface_);
+            present_modes_ = physical_device.getSurfacePresentModesKHR(**surface_);
+            surface_formats_ = physical_device.getSurfaceFormatsKHR(**surface_);
+
+            if (surface_formats_.empty() || present_modes_.empty())
+            {
+                return false;
+            }
+
+            return true;
+        });
+
+    if (selected_physical_device == physical_devices.end())
     {
         throw std::runtime_error("no suitable gpu found");
     }
 
+    physical_device_ = std::make_unique<vk::raii::PhysicalDevice>(std::move(*selected_physical_device));
 }
 
 void DeviceImpl::ConstructDevice()
@@ -183,13 +195,21 @@ void DeviceImpl::ConstructCommandPool()
 }
 
 }
-Device::Device(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface) {
-    impl_.reset(new detail::DeviceImpl(instance, surface));
+
+Device::Device(const std::unique_ptr<vk::raii::Instance> &instance, const std::unique_ptr<vk::raii::SurfaceKHR> &surface) :
+    impl_(new detail::DeviceImpl(instance, surface))
+{
 }
 
-Device::Device(Device&& other) noexcept :
-    impl_(std::move(other.impl_))
+
+const std::unique_ptr<vk::raii::Instance> &Device::GetInstance() const
 {
+    return impl_->instance_;
+}
+
+const std::unique_ptr<vk::raii::SurfaceKHR> &Device::GetSurface() const
+{
+    return impl_->surface_;
 }
 
 const std::unique_ptr<vk::raii::Device> &Device::GetDevice() const 

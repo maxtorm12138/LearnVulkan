@@ -1,10 +1,29 @@
 #include "lvk_model.hpp"
 namespace lvk
 {
+namespace detail
+{
+class ModelImpl : public boost::noncopyable
+{
+public:    
+    ModelImpl(const std::unique_ptr<lvk::Device>& device, const std::vector<Vertex> &vertices);
 
-Model::Model(const std::unique_ptr<lvk::Device>& device, const std::vector<Vertex> &vertices) :
-    device_(device),
-    vertex_count_(vertices.size())
+
+    const std::unique_ptr<lvk::Device>& device_;
+
+    std::unique_ptr<vk::raii::DeviceMemory> device_memory_;
+    std::unique_ptr<vk::raii::Buffer> vertex_buffer_;
+    uint32_t vertex_count_;
+
+};
+
+void ModelImplDeleter::operator()(ModelImpl *ptr)
+{
+    delete ptr;
+}
+
+ModelImpl::ModelImpl(const std::unique_ptr<lvk::Device>& device, const std::vector<Vertex> &vertices) :
+    device_(device)
 {
     vk::BufferCreateInfo buffer_create_info
     {
@@ -49,25 +68,24 @@ Model::Model(const std::unique_ptr<lvk::Device>& device, const std::vector<Verte
     device_memory_->unmapMemory();
 }
 
-Model::Model(Model &&other) noexcept :
-    device_(other.device_),
-    vertex_count_(other.vertex_count_)
+}
+
+
+Model::Model(const std::unique_ptr<lvk::Device>& device, const std::vector<Vertex> &vertices) :
+    impl_(new detail::ModelImpl(device, vertices))
 {
-    this->device_memory_ = std::move(other.device_memory_);
-    this->vertex_buffer_ = std::move(other.vertex_buffer_);
 }
 
 void Model::Draw(const vk::raii::CommandBuffer &command_buffer)
 {
-    command_buffer.draw(vertex_count_, 1, 0, 0);
+    command_buffer.draw(impl_->vertex_count_, 1, 0, 0);
 }
 
 void Model::BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer)
 {
     uint64_t offset = 0;
-    vk::ArrayProxy<const vk::Buffer> buffers(**vertex_buffer_);
+    vk::ArrayProxy<const vk::Buffer> buffers(**impl_->vertex_buffer_);
     vk::ArrayProxy<vk::DeviceSize> offsets(offset);
-
     command_buffer.bindVertexBuffers(0, buffers, offsets);
 }
 }
