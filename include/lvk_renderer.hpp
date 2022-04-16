@@ -28,29 +28,27 @@ struct WindowEventFlags
 class Renderer : public boost::noncopyable
 {
 public:
-    Renderer(std::nullptr_t);
-    Renderer(const std::unique_ptr<lvk::Device> &device, const std::unique_ptr<SDL2pp::Window> &window);
+    Renderer(const lvk::Device &device);
     Renderer(Renderer &&other) noexcept;
     
-    using RecordCommandBufferCallback = std::function<void(const vk::raii::CommandBuffer &command_buffer, const std::unique_ptr<vk::raii::RenderPass> &render_pass, const vk::raii::Framebuffer &, vk::Extent2D)>;
+    using RecordCommandBufferCallback = std::function<void(const vk::raii::CommandBuffer &command_buffer, const vk::raii::RenderPass &render_pass, const vk::raii::Framebuffer &, vk::Extent2D)>;
     void DrawFrame(RecordCommandBufferCallback recorder);
 
 public:
-    [[nodiscard]] uint64_t GetFrameCounter() const { return frame_counter_; }
-    [[nodiscard]] const std::unique_ptr<lvk::Swapchain> &GetSwapchain() const { return swapchain_; }
-    void NotifyWindowResized();
+    uint64_t GetFrameCounter() const { return frame_counter_; }
+    const std::unique_ptr<lvk::Swapchain> &GetSwapchain() const { return swapchain_; }
+    const vk::raii::RenderPass &GetRenderPass() const { return swapchain_->GetRenderPass(); }
+
+    void NotifyWindowEvent(SDL_Event *event);
 
 private:
     void ReCreateSwapchain();
+    
+    
+private:
+    const lvk::Device &device_;
 
 private:
-    static constexpr auto MAX_FRAME_IN_FLIGHT = 2;
-    static const std::unordered_set<vk::Result> WINDOW_RESIZE_ERRORS;
-
-    const std::unique_ptr<lvk::Device> &device_;
-    const std::unique_ptr<vk::raii::SurfaceKHR> &surface_;
-    const std::unique_ptr<SDL2pp::Window> &window_;
-
     std::unique_ptr<lvk::Swapchain> swapchain_;
 
     std::vector<vk::raii::CommandBuffer> command_buffers_{};

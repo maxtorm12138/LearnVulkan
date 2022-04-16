@@ -29,9 +29,8 @@ std::vector<char> ReadShaderFile(std::string_view file_name)
 }// namespace detail
 
 
-Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique_ptr<vk::raii::RenderPass> &render_pass) :
-    device_(device),
-    render_pass_(render_pass)
+Pipeline::Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render_pass) :
+    device_(device)
 {
 
     {
@@ -42,7 +41,7 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
             .pCode = reinterpret_cast<uint32_t *>(code.data())
         };
 
-        vertex_shader_module_ = std::make_unique<vk::raii::ShaderModule>(*device_->GetDevice(), shader_module_create_info);
+        vertex_shader_module_ = vk::raii::ShaderModule(device_.GetDevice(), shader_module_create_info);
     }
 
     {
@@ -53,7 +52,7 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
             .pCode = reinterpret_cast<uint32_t *>(code.data())
         };
 
-        fragment_shader_module_ = std::make_unique<vk::raii::ShaderModule>(*device_->GetDevice(), shader_module_create_info);
+        fragment_shader_module_ = vk::raii::ShaderModule(device_.GetDevice(), shader_module_create_info);
     }
 
     std::array<vk::PipelineShaderStageCreateInfo, 2> shader_stage_create_infos
@@ -61,13 +60,13 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
         vk::PipelineShaderStageCreateInfo
         {
             .stage = vk::ShaderStageFlagBits::eVertex,
-            .module = **vertex_shader_module_,
+            .module = *vertex_shader_module_,
             .pName = "main"
         },
         vk::PipelineShaderStageCreateInfo
         {
             .stage = vk::ShaderStageFlagBits::eFragment,
-            .module = **fragment_shader_module_,
+            .module = *fragment_shader_module_,
             .pName = "main"
         }
     };
@@ -160,7 +159,7 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
         .pPushConstantRanges = nullptr
     };
 
-    pipeline_layout_ = std::make_unique<vk::raii::PipelineLayout>(*device_->GetDevice(), pipeline_layout_create_info);
+    pipeline_layout_ = vk::raii::PipelineLayout(device_.GetDevice(), pipeline_layout_create_info);
 
 
     vk::GraphicsPipelineCreateInfo graphic_pipeline_create_info
@@ -175,35 +174,29 @@ Pipeline::Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique
         .pDepthStencilState = nullptr,
         .pColorBlendState = &color_blend_state_create_info,
         .pDynamicState = &dynamic_state_create_info,
-        .layout = **pipeline_layout_,
-        .renderPass = **render_pass_,
+        .layout = *pipeline_layout_,
+        .renderPass = *render_pass,
         .subpass = 0,
         .basePipelineHandle = nullptr,
         .basePipelineIndex = -1,
     };
-    pipeline_ = std::make_unique<vk::raii::Pipeline>(*device_->GetDevice(), pipeline_cache_, graphic_pipeline_create_info);
+
+    pipeline_ = vk::raii::Pipeline(device_.GetDevice(), {nullptr}, graphic_pipeline_create_info);
 }
 
 
 Pipeline::Pipeline(Pipeline&& other) noexcept :
-    device_(other.device_),
-    render_pass_(other.render_pass_)
+    device_(other.device_)
 {
     this->vertex_shader_module_ = std::move(other.vertex_shader_module_);
     this->fragment_shader_module_ = std::move(other.fragment_shader_module_);
     this->pipeline_layout_ = std::move(other.pipeline_layout_);
-    this->pipeline_cache_ = std::move(other.pipeline_cache_);
     this->pipeline_ = std::move(other.pipeline_);
-}
-
-const std::unique_ptr<vk::raii::Pipeline> &Pipeline::GetPipeline() const
-{
-    return pipeline_;
 }
 
 void Pipeline::BindPipeline(const vk::raii::CommandBuffer &command_buffer)
 {
-    command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, **pipeline_);
+    command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline_);
 }
 
 }// namespace lvk

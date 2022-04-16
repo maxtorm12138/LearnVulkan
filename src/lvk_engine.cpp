@@ -6,6 +6,7 @@
 // std
 #include <unordered_set>
 #include <thread>
+#include <unordered_map>
 
 // SDL
 #include <SDL_vulkan.h>
@@ -26,58 +27,16 @@ namespace lvk
 {
 namespace detail
 {
-VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
-    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData)
-{
-    using boost::log::trivial::severity_level;
-    std::string type;
-    if (messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
-    {
-        type = "GENERAL";
-    }
-    else if (messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-    {
-        type = "PERFORMANCE";
-    }
-    else if (messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
-    {
-        type = "VALIDATION";
-    }
-    else
-    {
-        type = "NONE";
-    }
 
-    switch (messageSeverity)
-    {
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            BOOST_LOG_TRIVIAL(debug) << type << "\t" << pCallbackData->pMessage;
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            BOOST_LOG_TRIVIAL(info) << type << "\t" << pCallbackData->pMessage;
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-            BOOST_LOG_TRIVIAL(warning) << type << "\t" << pCallbackData->pMessage;
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            BOOST_LOG_TRIVIAL(error) << type << "\t" << pCallbackData->pMessage;
-            break;
-        default:
-            BOOST_LOG_TRIVIAL(fatal) << type << "\t" << pCallbackData->pMessage;
-            break;
-    }
-    return VK_FALSE;
-}
+const vk::DebugUtilsMessageSeverityFlagsEXT ENABLE_MESSAGE_SEVERITY = // vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+                                                                      vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+                                                                      vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
+                                                                      vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
 
-const std::vector<Vertex> vertices = 
-{
-    {{0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}},
-    {{1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}},
-    {{-1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}}
-};
+const vk::DebugUtilsMessageTypeFlagsEXT ENABLE_MESSAGE_TYPE = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                                                              vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                                                              vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
+
 
 class EngineImpl
 {
@@ -85,24 +44,27 @@ public:
     EngineImpl();
     void Run();
 
-    void ConstructInstance();
-    int NotifyWindowEvent(SDL_Event *event);
+private:
+    void RunRender();
 
-    std::unique_ptr<SDL2pp::SDL> sdl_;
-    std::unique_ptr<SDL2pp::Window> window_;
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* data, void*);
 
+    vk::raii::Instance ConstructInstance();
+    vk::raii::SurfaceKHR ConstructSurface();
+
+
+private:
     vk::raii::Context context_;
-    std::unique_ptr<vk::raii::Instance> instance_;
+    SDL2pp::SDL sdl_;
 
-    #ifndef NDEBUG
-    std::unique_ptr<vk::raii::DebugUtilsMessengerEXT> debug_messenger_;
-    #endif
-
-    std::unique_ptr<vk::raii::SurfaceKHR> surface_;
-    std::unique_ptr<lvk::Device> device_;
-    std::unique_ptr<lvk::Renderer> renderer_;
-    std::unique_ptr<lvk::Pipeline> pipeline_;
-    std::unique_ptr<lvk::Model> model_;
+    SDL2pp::Window window_;
+    vk::raii::Instance instance_;
+    vk::raii::SurfaceKHR surface_;
+    lvk::Device device_;
+    lvk::Renderer renderer_;
+    lvk::Pipeline pipeline_;
+    vk::raii::DebugUtilsMessengerEXT debug_messenger_;
+    std::atomic<bool> quit_{false};
 };
 
 void EngineImplDeleter::operator()(EngineImpl *ptr)
@@ -110,80 +72,169 @@ void EngineImplDeleter::operator()(EngineImpl *ptr)
     delete ptr;
 }
 
-EngineImpl::EngineImpl()
+EngineImpl::EngineImpl() :
+    sdl_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
+    window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE),
+    instance_(ConstructInstance()),
+    surface_(ConstructSurface()),
+    device_(instance_, surface_, window_),
+    renderer_(device_),
+    #ifndef NDEBUG
+    debug_messenger_(instance_, vk::DebugUtilsMessengerCreateInfoEXT{
+            .messageSeverity = ENABLE_MESSAGE_SEVERITY,
+            .messageType = ENABLE_MESSAGE_TYPE,
+            .pfnUserCallback = &DebugCallback
+    }),
+    pipeline_(device_, renderer_.GetRenderPass())
+    #else
+    debug_messenger_(nullptr)
+    #endif
 {
-    sdl_ = std::make_unique<SDL2pp::SDL>(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
-    window_ = std::make_unique<SDL2pp::Window>(
-        "HelloVulkan",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        800,
-        600,
-        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+}
 
-    ConstructInstance();
 
+
+vk::raii::Instance EngineImpl::ConstructInstance()
+{
+    #ifndef NDEBUG
+    std::unordered_set<std::string_view> REQUIRED_LAYERS{LAYER_NAME_VK_LAYER_KHRONOS_validation};
+    std::unordered_set<std::string_view> REQUIRED_EXTENSIONS{EXT_NAME_VK_EXT_debug_utils};
+    #else
+    std::unordered_set<std::string_view> REQUIRED_LAYERS {};
+    std::unordered_set<std::string_view> REQUIRED_EXTENSIONS {};
+    #endif
+    std::unordered_set<std::string_view> OPTIONAL_EXTENSIONS{EXT_NAME_VK_KHR_get_physical_device_properties2};
+
+    // get sdl extensions
+    {
+        unsigned int ext_ct{0};
+        if (SDL_Vulkan_GetInstanceExtensions(window_.Get(), &ext_ct, nullptr) != SDL_TRUE)
+        {
+            throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
+        }
+
+        std::vector<const char *> sdl_required_extensions(ext_ct);
+        if (SDL_Vulkan_GetInstanceExtensions(window_.Get(), &ext_ct, sdl_required_extensions.data()) != SDL_TRUE)
+        {
+            throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
+        }
+
+        std::copy(sdl_required_extensions.begin(), sdl_required_extensions.end(), std::inserter(REQUIRED_EXTENSIONS, REQUIRED_EXTENSIONS.end()));
+    }
+
+    // check enable layers
+    std::vector<const char *> enable_layers_view;
+    auto layer_props = context_.enumerateInstanceLayerProperties();
+    std::vector<const char *> layers;
+    std::transform(layer_props.begin(), layer_props.end(), std::back_inserter(layers), [](auto &&prop) { return prop.layerName.data(); });
+    std::copy_if(layers.begin(), layers.end(), std::back_inserter(enable_layers_view), [&](auto &&name) { return REQUIRED_LAYERS.contains(name); });
+
+    // check enable extensions
+    std::vector<const char *> enable_extensions_view;
+    auto extension_props = context_.enumerateInstanceExtensionProperties();
+    std::vector<const char *> extensions;
+    std::transform(extension_props.begin(), extension_props.end(), std::back_inserter(extensions), [](auto &&prop) { return prop.extensionName.data(); });
+    std::copy_if(extensions.begin(), extensions.end(), std::back_inserter(enable_extensions_view), [&](auto &&extension) { return REQUIRED_EXTENSIONS.contains(extension) || OPTIONAL_EXTENSIONS.contains(extension); });
+
+    if (enable_layers_view.size() < REQUIRED_LAYERS.size())
+    {
+        throw std::runtime_error("required layer not satisfied");
+    }
+
+    if (enable_extensions_view.size() < REQUIRED_EXTENSIONS.size())
+    {
+        throw std::runtime_error("required extension not satisfied");
+    }
+
+    vk::ApplicationInfo application_info
+    {
+        .pApplicationName = "Vulkan Engine",
+        .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
+        .pEngineName = "No engine",
+        .engineVersion = VK_MAKE_VERSION(0, 1, 0),
+        .apiVersion = VK_API_VERSION_1_0,
+    };
+
+    vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain
+    {
+        vk::InstanceCreateInfo
+        {
+            .pApplicationInfo = &application_info,
+            .enabledLayerCount = static_cast<uint32_t>(enable_layers_view.size()),
+            .ppEnabledLayerNames = enable_layers_view.data(),
+            .enabledExtensionCount = static_cast<uint32_t>(enable_extensions_view.size()),
+            .ppEnabledExtensionNames = enable_extensions_view.data()
+        },
+        vk::DebugUtilsMessengerCreateInfoEXT
+        {
+            .messageSeverity = ENABLE_MESSAGE_SEVERITY,
+            .messageType = ENABLE_MESSAGE_TYPE,
+            .pfnUserCallback = &DebugCallback
+        }
+    };
+
+    #ifdef NDEBUG
+    chain.unlink<vk::DebugUtilsMessengerCreateInfoEXT>();
+    #endif
+
+    return vk::raii::Instance(context_, chain.get<vk::InstanceCreateInfo>());
+}
+
+vk::raii::SurfaceKHR EngineImpl::ConstructSurface()
+{
     VkSurfaceKHR surface;
-    if (!SDL_Vulkan_CreateSurface(window_->Get(), **instance_, &surface))
+    if (!SDL_Vulkan_CreateSurface(window_.Get(), *instance_, &surface))
     {
         throw std::runtime_error(fmt::format("SDL_Vulkan_CreateSurface fail description: {}", SDL_GetError()));
     }
+    return vk::raii::SurfaceKHR(instance_, surface);
+}
 
-    surface_ = std::make_unique<vk::raii::SurfaceKHR>(*instance_, surface);
-    device_ = std::make_unique<lvk::Device>(instance_, surface_);
-    renderer_ = std::make_unique<lvk::Renderer>(device_, window_);
-    pipeline_ = std::make_unique<lvk::Pipeline>(device_, renderer_->GetSwapchain()->GetRenderPass());
-    model_ = std::make_unique<lvk::Model>(device_, vertices);
+VKAPI_ATTR VkBool32 VKAPI_CALL EngineImpl::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* data, void*)
+{
+    BOOST_LOG_TRIVIAL(info) << data->pMessage;
+    return VK_FALSE;
 }
 
 void EngineImpl::Run()
 {
-
-    bool running{true};
-    bool window_minimized{false};
+    window_.Show();
+    std::jthread render_thread([this](){RunRender();});
     SDL_Event event;
-    while (running)
+    while (!quit_)
     {
         while(SDL_PollEvent(&event))
         {
-            switch(event.type)
+            if (event.type == SDL_QUIT)
             {
-                case SDL_QUIT:
-                    running = false;
-                    break;
-                case SDL_WINDOWEVENT:
-                    switch (event.window.event) 
-                    {
-                        case SDL_WINDOWEVENT_RESIZED:
-                            renderer_->NotifyWindowResized();
-                            break;
-                        case SDL_WINDOWEVENT_MINIMIZED:
-                            window_minimized = true;
-                            break;
-                        case SDL_WINDOWEVENT_RESTORED:
-                        case SDL_WINDOWEVENT_SHOWN:
-                            window_minimized = false;
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
+                quit_ = true;
+            }
+            else if(event.type == SDL_WINDOWEVENT)
+            {
+                renderer_.NotifyWindowEvent(&event);
             }
         }
+    }
+}
 
-        if (window_minimized)
-        {
-            SDL_Delay(1);
-            continue;
-        }
+void EngineImpl::RunRender()
+{
+    const std::vector<Vertex> vertices = 
+    {
+        {{0.0f, -1.0f}, {0.0f, 1.0f, 1.0f}},
+        {{1.0f, 1.0f}, {1.0f, 0.0f, 1.0f}},
+        {{-1.0f, 1.0f}, {1.0f, 1.0f, 0.0f}}
+    };
 
-        renderer_->DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const std::unique_ptr<vk::raii::RenderPass> &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
+    lvk::Model model(device_, vertices);
+
+    while(!quit_)
+    {
+        renderer_.DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const vk::raii::RenderPass &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
         {
             command_buffer.reset();
-            vk::CommandBufferBeginInfo command_buffer_begin_info{};
-            command_buffer.begin(command_buffer_begin_info);
+
+            command_buffer.begin({});
 
             // set viewport
             vk::Viewport viewport
@@ -206,13 +257,13 @@ void EngineImpl::Run()
             vk::ArrayProxy<const vk::Rect2D> scissors(scissor);
             command_buffer.setScissor(0, scissors);
 
-
+            // begin renderpass
             vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
             vk::ClearValue clear_value;
             clear_value.color = clear_color;
             vk::RenderPassBeginInfo render_pass_begin_info
             {
-                .renderPass = **render_pass,
+                .renderPass = *render_pass,
                 .framebuffer = *frame_buffer,
                 .renderArea
                 {
@@ -224,117 +275,18 @@ void EngineImpl::Run()
             };
 
             command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
-            pipeline_->BindPipeline(command_buffer);
-            model_->BindVertexBuffers(command_buffer);
-            model_->Draw(command_buffer);
+
+            pipeline_.BindPipeline(command_buffer);
+
+            model.BindVertexBuffers(command_buffer);
+            model.Draw(command_buffer);
 
             command_buffer.endRenderPass();
+
             command_buffer.end();
         });
     }
-}
-
-void EngineImpl::ConstructInstance()
-{
-    #ifndef NDEBUG
-    std::unordered_set<std::string_view> REQUIRED_LAYERS{LAYER_NAME_VK_LAYER_KHRONOS_validation};
-    std::unordered_set<std::string_view> REQUIRED_EXTENSIONS{EXT_NAME_VK_EXT_debug_utils};
-    #else
-    std::unordered_set<std::string_view> REQUIRED_LAYERS {};
-    std::unordered_set<std::string_view> REQUIRED_EXTENSIONS {};
-    #endif
-
-    // get sdl extensions
-    {
-        unsigned int ext_ct{0};
-        if (SDL_Vulkan_GetInstanceExtensions(window_->Get(), &ext_ct, nullptr) != SDL_TRUE)
-        {
-            throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
-        }
-
-        std::vector<const char *> sdl_required_extensions(ext_ct);
-        if (SDL_Vulkan_GetInstanceExtensions(window_->Get(), &ext_ct, sdl_required_extensions.data()) != SDL_TRUE)
-        {
-            throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
-        }
-
-        std::copy(sdl_required_extensions.begin(), sdl_required_extensions.end(), std::inserter(REQUIRED_EXTENSIONS, REQUIRED_EXTENSIONS.end()));
-    }
-
-    // views of enable layer
-    std::vector<const char *> enable_layers_view;
-    auto layer_props = context_.enumerateInstanceLayerProperties();
-    std::vector<const char *> layers;
-    std::transform(layer_props.begin(), layer_props.end(), std::back_inserter(layers), [](auto &&prop) { return prop.layerName.data(); });
-    std::copy_if(layers.begin(), layers.end(), std::back_inserter(enable_layers_view), [&](auto &&name) { return REQUIRED_LAYERS.contains(name); });
-
-    // views of enable extension
-    auto opt_or_req_ext = [&](auto &&extension) 
-    {
-        return REQUIRED_EXTENSIONS.contains(extension) || extension == EXT_NAME_VK_KHR_get_physical_device_properties2;
-    };
-
-    std::vector<const char *> enable_extensions_view;
-    auto extension_props = context_.enumerateInstanceExtensionProperties();
-    std::vector<const char *> extensions;
-    std::transform(extension_props.begin(), extension_props.end(), std::back_inserter(extensions), [](auto &&prop) { return prop.extensionName.data(); });
-    std::copy_if(extensions.begin(), extensions.end(), std::back_inserter(enable_extensions_view), opt_or_req_ext);
-
-    if (enable_layers_view.size() < REQUIRED_LAYERS.size())
-    {
-        throw std::runtime_error("required layer not satisfied");
-    }
-
-    if (enable_extensions_view.size() < REQUIRED_EXTENSIONS.size())
-    {
-        throw std::runtime_error("required extension not satisfied");
-    }
-
-    vk::DebugUtilsMessageSeverityFlagsEXT message_severity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
-                                                             vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
-                                                             vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
-                                                             vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
-
-    vk::DebugUtilsMessageTypeFlagsEXT message_type = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
-                                                     vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-                                                     vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
-
-    vk::ApplicationInfo application_info
-    {
-        .pApplicationName = "Hello Vulkan",
-        .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
-        .pEngineName = "No engine",
-        .engineVersion = VK_MAKE_VERSION(0, 1, 0),
-        .apiVersion = VK_API_VERSION_1_0,
-    };
-
-    vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain
-    {
-        vk::InstanceCreateInfo
-        {
-            .pApplicationInfo = &application_info,
-            .enabledLayerCount = static_cast<uint32_t>(enable_layers_view.size()),
-            .ppEnabledLayerNames = enable_layers_view.data(),
-            .enabledExtensionCount = static_cast<uint32_t>(enable_extensions_view.size()),
-            .ppEnabledExtensionNames = enable_extensions_view.data()
-        },
-        vk::DebugUtilsMessengerCreateInfoEXT
-        {
-            .messageSeverity = message_severity,
-            .messageType = message_type,
-            .pfnUserCallback = &DebugCallback
-        }
-    };
-
-    #ifdef NDEBUG
-    chain.unlink<vk::DebugUtilsMessengerCreateInfoEXT>();
-    #endif
-
-    instance_ = std::make_unique<vk::raii::Instance>(context_, chain.get<vk::InstanceCreateInfo>());
-
-    #ifndef NDEBUG
-    debug_messenger_ = std::make_unique<vk::raii::DebugUtilsMessengerEXT>(*instance_, chain.get<vk::DebugUtilsMessengerCreateInfoEXT>());
-    #endif
+    device_.GetDevice().waitIdle();
 }
 
 }

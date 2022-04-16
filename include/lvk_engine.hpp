@@ -10,11 +10,13 @@ namespace lvk
 {
 namespace detail
 {
+
 class EngineImpl;
 struct EngineImplDeleter
 {
-    void operator()(EngineImpl *ptr);
+    void operator()(EngineImpl *);
 };
+
 }
 
 class Engine : public boost::noncopyable

@@ -17,22 +17,19 @@ namespace lvk
 class Pipeline : public boost::noncopyable
 {
 public:
-    Pipeline(const std::unique_ptr<lvk::Device>& device, const std::unique_ptr<vk::raii::RenderPass> &render_pass);
+    Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render_pass);
     Pipeline(Pipeline&& other) noexcept;
 
     void BindPipeline(const vk::raii::CommandBuffer &command_buffer);
 public:
-
-    const std::unique_ptr<vk::raii::Pipeline> &GetPipeline() const;
+    const vk::raii::Pipeline &GetPipeline() const { return pipeline_; }
 private:
-    const std::unique_ptr<lvk::Device>& device_;
-    const std::unique_ptr<vk::raii::RenderPass> &render_pass_;
+    const lvk::Device &device_;
 
-    std::unique_ptr<vk::raii::ShaderModule> vertex_shader_module_{nullptr};
-    std::unique_ptr<vk::raii::ShaderModule> fragment_shader_module_{nullptr};
-    std::unique_ptr<vk::raii::PipelineLayout> pipeline_layout_{nullptr};
-    vk::Optional<const vk::raii::PipelineCache> pipeline_cache_{nullptr};
-    std::unique_ptr<vk::raii::Pipeline> pipeline_{nullptr};
+    vk::raii::ShaderModule vertex_shader_module_{nullptr};
+    vk::raii::ShaderModule fragment_shader_module_{nullptr};
+    vk::raii::PipelineLayout pipeline_layout_{nullptr};
+    vk::raii::Pipeline pipeline_{nullptr};
 };
 
 }// namespace lvk
