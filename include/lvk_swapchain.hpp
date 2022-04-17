@@ -1,16 +1,19 @@
-#pragma once
+#ifndef _LVK_SWAPCHAIN_H
+#define _LVK_SWAPCHAIN_H
+
+// module
+#include "lvk_device.hpp"
 
 // boost
 #include <boost/noncopyable.hpp>
 
 // vulkan
+#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 // SDLpp
 #include <SDL2pp/SDL2pp.hh>
 
-// self
-#include "lvk_device.hpp"
 
 namespace lvk
 {
@@ -51,3 +54,4 @@ private:
 
 };
 }// namespace lvk
+#endif

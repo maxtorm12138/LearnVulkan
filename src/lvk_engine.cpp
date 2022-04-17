@@ -15,6 +15,10 @@
 // fmt
 #include <fmt/format.h>
 
+// VMA
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.hpp>
+
 // module
 #include "lvk_definitions.hpp"
 #include "lvk_model.hpp"
@@ -22,6 +26,7 @@
 #include "lvk_pipeline.hpp"
 #include "lvk_renderer.hpp"
 #include "lvk_device.hpp"
+
 
 namespace lvk
 {
@@ -42,6 +47,7 @@ class EngineImpl
 {
 public:
     EngineImpl();
+    ~EngineImpl();
     void Run();
 
 private:
@@ -51,7 +57,7 @@ private:
 
     vk::raii::Instance ConstructInstance();
     vk::raii::SurfaceKHR ConstructSurface();
-
+    vma::Allocator ConstructAllocator();
 
 private:
     vk::raii::Context context_;
@@ -61,6 +67,7 @@ private:
     vk::raii::Instance instance_;
     vk::raii::SurfaceKHR surface_;
     lvk::Device device_;
+    vma::Allocator allocator_;
     lvk::Renderer renderer_;
     lvk::Pipeline pipeline_;
     vk::raii::DebugUtilsMessengerEXT debug_messenger_;
@@ -74,25 +81,34 @@ void EngineImplDeleter::operator()(EngineImpl *ptr)
 
 EngineImpl::EngineImpl() :
     sdl_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
-    window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE),
+    window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN),
     instance_(ConstructInstance()),
     surface_(ConstructSurface()),
     device_(instance_, surface_, window_),
+    allocator_(vma::createAllocator(vma::AllocatorCreateInfo{
+        .physicalDevice = *device_.GetPhysicalDevice(),
+        .device = *device_.GetDevice(),
+        .instance = *instance_,
+        .vulkanApiVersion = VK_API_VERSION_1_0,
+    })),
     renderer_(device_),
+    pipeline_(device_, renderer_.GetRenderPass()),
     #ifndef NDEBUG
     debug_messenger_(instance_, vk::DebugUtilsMessengerCreateInfoEXT{
             .messageSeverity = ENABLE_MESSAGE_SEVERITY,
             .messageType = ENABLE_MESSAGE_TYPE,
             .pfnUserCallback = &DebugCallback
-    }),
-    pipeline_(device_, renderer_.GetRenderPass())
+    })
     #else
     debug_messenger_(nullptr)
     #endif
 {
 }
 
-
+EngineImpl::~EngineImpl()
+{
+    allocator_.destroy();
+}
 
 vk::raii::Instance EngineImpl::ConstructInstance()
 {
@@ -203,16 +219,14 @@ void EngineImpl::Run()
     SDL_Event event;
     while (!quit_)
     {
-        while(SDL_PollEvent(&event))
+        SDL_WaitEvent(&event);
+        if (event.type == SDL_QUIT)
         {
-            if (event.type == SDL_QUIT)
-            {
-                quit_ = true;
-            }
-            else if(event.type == SDL_WINDOWEVENT)
-            {
-                renderer_.NotifyWindowEvent(&event);
-            }
+            quit_ = true;
+        }
+        else if(event.type == SDL_WINDOWEVENT)
+        {
+            renderer_.NotifyWindowEvent(&event);
         }
     }
 }
@@ -226,8 +240,9 @@ void EngineImpl::RunRender()
         {{-1.0f, 1.0f}, {1.0f, 1.0f, 0.0f}}
     };
 
-    lvk::Model model(device_, vertices);
+    lvk::Model model(device_, allocator_, vertices);
 
+    auto begin_time = std::chrono::high_resolution_clock::now();
     while(!quit_)
     {
         renderer_.DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const vk::raii::RenderPass &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
@@ -286,6 +301,8 @@ void EngineImpl::RunRender()
             command_buffer.end();
         });
     }
+    auto end_time = std::chrono::high_resolution_clock::now();
+    BOOST_LOG_TRIVIAL(info) << "avg fps: " << renderer_.GetFrameCounter() / (std::chrono::duration_cast<std::chrono::seconds>(end_time-begin_time).count());
     device_.GetDevice().waitIdle();
 }
 

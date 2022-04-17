@@ -1,13 +1,14 @@
-#pragma once
+#ifndef _LVK_VERTEX_H
+#define _LVK_VERTEX_H
+
 // GLM
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
 // vulkan
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_raii.hpp>
-#include <vulkan/vulkan_structs.hpp>
+
+// std
+#include <vector>
 
 namespace lvk
 {
@@ -21,3 +22,4 @@ struct Vertex
 };
 
 }
+#endif

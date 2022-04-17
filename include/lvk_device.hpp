@@ -1,4 +1,8 @@
-#pragma once
+#ifndef _LVK_DEVICE_H
+#define _LVK_DEVICE_H
+
+// module
+#include "lvk_definitions.hpp"
 
 // boost
 #include <boost/noncopyable.hpp>
@@ -7,13 +11,12 @@
 #include <memory>
 
 // vulkan
+#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 // SDL2
 #include <SDL2pp/SDL2pp.hh>
 
-// module
-#include "lvk_definitions.hpp"
 
 namespace lvk
 {
@@ -35,6 +38,7 @@ public:
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats() const { return physical_device_.getSurfaceFormatsKHR(*surface_); }
     vk::PhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProperties() const { return physical_device_.getMemoryProperties(); }
     const vk::raii::Device &GetDevice() const { return device_; }
+    const vk::raii::PhysicalDevice &GetPhysicalDevice() const { return physical_device_; }
     const vk::raii::Queue &GetQueue() const { return queue_; }
 
     std::vector<vk::raii::CommandBuffer> AllocateCommandBuffers(uint32_t count) const;
@@ -54,3 +58,5 @@ private:
     vk::raii::CommandPool command_pool_{nullptr};
 };
 }  // namespace lvk
+
+#endif

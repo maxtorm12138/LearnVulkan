@@ -1,4 +1,10 @@
-#pragma once
+#ifndef _LVK_RENDERER_H
+#define _LVK_RENDERER_H
+
+// module
+#include "lvk_device.hpp"
+#include "lvk_swapchain.hpp"
+#include "lvk_pipeline.hpp"
 
 // boost
 #include <boost/noncopyable.hpp>
@@ -6,15 +12,10 @@
 // vulkan
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
-#include <vulkan/vulkan_structs.hpp>
 
 // std
 #include <unordered_set>
 
-// module
-#include "lvk_device.hpp"
-#include "lvk_swapchain.hpp"
-#include "lvk_pipeline.hpp"
 
 namespace lvk
 {
@@ -60,3 +61,4 @@ private:
 };
 
 }
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _LVK_ENGINE_H
+#define _LVK_ENGINE_H
 
 // boost
 #include <boost/noncopyable.hpp>
@@ -32,3 +33,4 @@ private:
 };
 
 };
+#endif

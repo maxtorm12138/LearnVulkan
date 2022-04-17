@@ -1,4 +1,8 @@
-#pragma once
+#ifndef _LVK_PIPELINE_H
+#define _LVK_PIPELINE_H
+
+// module
+#include "lvk_device.hpp"
 
 // boost
 #include <boost/noncopyable.hpp>
@@ -6,10 +10,7 @@
 // vulkan
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
-#include <vulkan/vulkan_structs.hpp>
 
-// module
-#include "lvk_device.hpp"
 
 namespace lvk
 {
@@ -33,3 +34,4 @@ private:
 };
 
 }// namespace lvk
+#endif

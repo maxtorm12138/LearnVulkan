@@ -1,52 +1,82 @@
 #include "lvk_model.hpp"
+
 namespace lvk
 {
 
-Model::Model(const lvk::Device& device, const std::vector<Vertex> &vertices) :
-    device_(device)
+Model::Model(const lvk::Device& device, const vma::Allocator &allocator, const std::vector<Vertex> &vertices) :
+    device_(device),
+    allocator_(allocator),
+    vertex_count_(vertices.size())
 {
-    vertex_count_ = vertices.size();
-    vk::BufferCreateInfo buffer_create_info
+    auto vertices_size = vertices.size() * sizeof(Vertex);
+
+    // vertex buffer
+    vk::BufferCreateInfo vertex_buffer_create_info
     {
-        .size = sizeof(vertices[0]) * vertices.size(),
-        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
+        .size = vertices_size,
+        .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
         .sharingMode = vk::SharingMode::eExclusive
     };
 
-    vertex_buffer_ = device_.GetDevice().createBuffer(buffer_create_info);
-    auto memory_requirements = vertex_buffer_.getMemoryRequirements();
-    auto memory_properties = device_.GetPhysicalDeviceMemoryProperties();
-
-    uint32_t memory_type_index{0};
-    bool found_memory_type{false};
-    for (memory_type_index = 0; memory_type_index < memory_properties.memoryTypeCount; memory_type_index++)
+    vma::AllocationCreateInfo vertex_buffer_allocation_create_info
     {
-        if ((memory_requirements.memoryTypeBits & (1 << memory_type_index)) &&
-            (memory_properties.memoryTypes[memory_type_index].propertyFlags & (vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)))
-        {
-            found_memory_type = true;
-            break;
-        }
-    }
-
-    if (!found_memory_type)
-    {
-        throw std::runtime_error("not found required device memory");
-    }
-    
-    vk::MemoryAllocateInfo memory_allocate_info
-    {
-        .allocationSize = memory_requirements.size,
-        .memoryTypeIndex = memory_type_index
+        .usage = vma::MemoryUsage::eAuto,
     };
 
-    device_memory_ = device_.GetDevice().allocateMemory(memory_allocate_info);
+    std::tie(vertex_buffer_, vertex_buffer_allocation_) = allocator.createBuffer(vertex_buffer_create_info, vertex_buffer_allocation_create_info);
 
-    vertex_buffer_.bindMemory(*device_memory_, 0);
+    vk::BufferCreateInfo stage_buffer_create_info
+    {
+        .size = vertices_size,
+        .usage = vk::BufferUsageFlagBits::eTransferSrc,
+        .sharingMode = vk::SharingMode::eExclusive
+    };
+    
+    vma::AllocationCreateInfo stage_buffer_allocation_create_info
+    {
+        .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
+        .usage = vma::MemoryUsage::eAuto
+    };
 
-    auto data = device_memory_.mapMemory(0, buffer_create_info.size);
-    memcpy(data, vertices.data(), buffer_create_info.size);
-    device_memory_.unmapMemory();
+    auto [stage_buffer, stage_allocation] = allocator.createBuffer(stage_buffer_create_info, stage_buffer_allocation_create_info);
+    auto stage_ptr = allocator.mapMemory(stage_allocation);
+    memcpy(stage_ptr, vertices.data(), vertices.size() * sizeof(Vertex));
+    allocator.unmapMemory(stage_allocation);
+    CopyStageBufferToVertexBuffer(stage_buffer, vertices.size() * sizeof(Vertex));
+    allocator.destroyBuffer(stage_buffer, stage_allocation);
+}
+
+Model::~Model()
+{
+    allocator_.destroyBuffer(vertex_buffer_, vertex_buffer_allocation_);
+}
+
+void Model::CopyStageBufferToVertexBuffer(const vk::Buffer &stage_buffer, uint64_t size)
+{
+    auto command_buffers = device_.AllocateCommandBuffers(1);
+    auto &command_buffer = command_buffers[0];
+    command_buffer.begin(vk::CommandBufferBeginInfo{.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+    vk::BufferCopy region
+    {
+        .srcOffset = 0,
+        .dstOffset = 0,
+        .size = size
+    };
+
+    vk::ArrayProxy<const vk::BufferCopy> regions(region);
+    command_buffer.copyBuffer(stage_buffer, vertex_buffer_, regions);
+    command_buffer.end();
+    
+    vk::ArrayProxy<const vk::CommandBuffer> submit_buffers(*command_buffer);
+    vk::SubmitInfo submit_info
+    {
+        .commandBufferCount = submit_buffers.size(),
+        .pCommandBuffers = submit_buffers.data()
+    };
+    vk::ArrayProxy<const vk::SubmitInfo> submit_infos(submit_info);
+
+    device_.GetQueue().submit(submit_infos);
+    device_.GetDevice().waitIdle();
 }
 
 void Model::Draw(const vk::raii::CommandBuffer &command_buffer)
@@ -57,7 +87,7 @@ void Model::Draw(const vk::raii::CommandBuffer &command_buffer)
 void Model::BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer)
 {
     uint64_t offset = 0;
-    vk::ArrayProxy<const vk::Buffer> buffers(*vertex_buffer_);
+    vk::ArrayProxy<const vk::Buffer> buffers(vertex_buffer_);
     vk::ArrayProxy<vk::DeviceSize> offsets(offset);
     command_buffer.bindVertexBuffers(0, buffers, offsets);
 }
