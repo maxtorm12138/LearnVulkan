@@ -36,4 +36,17 @@ const std::vector<vk::VertexInputAttributeDescription> &Vertex::GetVertexInputAt
     };
     return vertex_input_attribute_descriptions;
 }
+static const vk::DescriptorSetLayoutCreateInfo &Transform::GetDesciptorSetLayoutCreateInfo()
+{
+    vk::DescriptorSetLayoutBinding layout_binding
+    {
+        .binding = 0,
+        .descriptorType = vk::DescriptorType::eUniformBuffer,
+        .descriptorCount = 1,
+        .stageFlags = vk::ShaderStageFlagBits::eVertex,
+        .pImmutableSamplers = nullptr
+    };
+
+    vk::DescriptorSetLayout 
+}
 }

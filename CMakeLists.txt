@@ -59,3 +59,4 @@ target_link_libraries(lvk PRIVATE ${SDL2PP_LIBRARIES} Vulkan::Vulkan glm::glm Bo
 add_executable(draw_triangle src/draw_triangle.cpp)
 target_include_directories(draw_triangle PRIVATE include/)
 target_link_libraries(draw_triangle PRIVATE lvk Boost::log)
+
