@@ -24,6 +24,8 @@ public:
 
     void *MapMemory() const { return allocator_.get().mapMemory(allocation_); }
     void UnmapMemory() const { return allocator_.get().unmapMemory(allocation_); }
+
+    operator vk::Buffer() { return buffer_; }
 private:
     std::reference_wrapper<const vma::Allocator> allocator_;
     vma::Allocation allocation_;

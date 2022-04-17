@@ -30,13 +30,44 @@ Model::Model(const lvk::Device& device, const vma::Allocator &allocator, const s
     });
 
     auto stage_ptr = stage_buffer.MapMemory();
-    memcpy(stage_ptr, vertices.data(), vertices.size() * sizeof(Vertex));
+    memcpy(stage_ptr, vertices.data(), vertices_size);
     stage_buffer.UnmapMemory();
 
-    CopyStageBufferToVertexBuffer(stage_buffer, vertices.size() * sizeof(Vertex));
+    CopyBuffer(stage_buffer, vertex_buffer_, vertices_size);
 }
 
-void Model::CopyStageBufferToVertexBuffer(const lvk::Buffer &stage_buffer, uint64_t size)
+Model::Model(const lvk::Device& device, const vma::Allocator &allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices) :
+    Model(device, allocator, vertices)
+{
+    index_count_ = indices.size();
+
+    auto indices_size = indices.size() * sizeof(uint32_t);
+
+    index_buffer_.emplace(allocator_, vk::BufferCreateInfo{
+        .size = indices_size,
+        .usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        .sharingMode = vk::SharingMode::eExclusive
+    }, vma::AllocationCreateInfo{
+        .usage = vma::MemoryUsage::eAuto,
+    });
+
+    lvk::Buffer stage_buffer(allocator, {
+        .size = indices_size,
+        .usage = vk::BufferUsageFlagBits::eTransferSrc,
+        .sharingMode = vk::SharingMode::eExclusive
+    }, {
+        .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
+        .usage = vma::MemoryUsage::eAuto
+    });
+
+    auto stage_ptr = stage_buffer.MapMemory();
+    memcpy(stage_ptr, indices.data(), indices_size);
+    stage_buffer.UnmapMemory();
+
+    CopyBuffer(stage_buffer, *index_buffer_, indices_size);
+}
+
+void Model::CopyBuffer(const lvk::Buffer &stage_buffer, const lvk::Buffer &dest_buffer, uint64_t size)
 {
     auto command_buffers = device_.AllocateCommandBuffers(1);
     auto &command_buffer = command_buffers[0];
@@ -49,7 +80,7 @@ void Model::CopyStageBufferToVertexBuffer(const lvk::Buffer &stage_buffer, uint6
     };
 
     vk::ArrayProxy<const vk::BufferCopy> regions(region);
-    command_buffer.copyBuffer(*stage_buffer, *vertex_buffer_, regions);
+    command_buffer.copyBuffer(*stage_buffer, *dest_buffer, regions);
     command_buffer.end();
     
     vk::ArrayProxy<const vk::CommandBuffer> submit_buffers(*command_buffer);
@@ -66,7 +97,14 @@ void Model::CopyStageBufferToVertexBuffer(const lvk::Buffer &stage_buffer, uint6
 
 void Model::Draw(const vk::raii::CommandBuffer &command_buffer)
 {
-    command_buffer.draw(vertex_count_, 1, 0, 0);
+    if (index_buffer_)
+    {
+        command_buffer.drawIndexed(index_count_, 1, 0, 0, 0);
+    }
+    else
+    {
+        command_buffer.draw(vertex_count_, 1, 0, 0);
+    }
 }
 
 void Model::BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer)
@@ -75,5 +113,10 @@ void Model::BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer)
     vk::ArrayProxy<const vk::Buffer> buffers(*vertex_buffer_);
     vk::ArrayProxy<vk::DeviceSize> offsets(offset);
     command_buffer.bindVertexBuffers(0, buffers, offsets);
+
+    if (index_buffer_)
+    {
+        command_buffer.bindIndexBuffer(index_buffer_.value(), 0, vk::IndexType::eUint32);
+    }
 }
 }
