@@ -4,6 +4,7 @@
 // module
 #include "lvk_device.hpp"
 #include "lvk_vertex.hpp"
+#include "lvk_buffer.hpp"
 
 // boost
 #include <boost/noncopyable.hpp>
@@ -19,22 +20,21 @@ namespace lvk
 class Model : public boost::noncopyable
 {
 public:
-    Model(const lvk::Device& device, const vma::Allocator &allocator,const std::vector<Vertex> &vertices);
-    ~Model();
+    Model(const lvk::Device& device, const vma::Allocator &allocator, const std::vector<Vertex> &vertices);
+
 public:
     void BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer);
     void Draw(const vk::raii::CommandBuffer &command_buffer);
 
 private:
     vk::raii::DeviceMemory ConstructDeviceMemory(vk::raii::Buffer &buffer, vk::MemoryPropertyFlags properties);
-    void CopyStageBufferToVertexBuffer(const vk::Buffer &stage_buffer, uint64_t size);
+    void CopyStageBufferToVertexBuffer(const lvk::Buffer &stage_buffer, uint64_t size);
 private:
     const lvk::Device& device_;
     const vma::Allocator &allocator_;
 private:
     uint32_t vertex_count_{0};
-    vk::Buffer vertex_buffer_;
-    vma::Allocation vertex_buffer_allocation_;
+    lvk::Buffer vertex_buffer_;
 };
 }
 
