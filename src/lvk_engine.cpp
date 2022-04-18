@@ -36,6 +36,19 @@ namespace lvk
 namespace detail
 {
 
+const std::vector<Vertex> vertices = 
+{
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint32_t> indices =
+{
+    0, 1, 2, 2, 3, 0
+};
+
 const vk::DebugUtilsMessageSeverityFlagsEXT ENABLE_MESSAGE_SEVERITY = // vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
                                                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
                                                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
@@ -55,6 +68,13 @@ public:
 
 private:
     void RunRender();
+    void DrawFrame(
+        const vk::raii::CommandBuffer &command_buffer,
+        const lvk::Buffer &uniform_buffer,
+        const vk::raii::Framebuffer &framebuffer,
+        const vk::raii::DescriptorSet &descriptor_set,
+        const lvk::Pipeline &pipeline,
+        const lvk::Swapchain &swapchain);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* data, void*);
 
@@ -70,7 +90,7 @@ private:
     vk::raii::SurfaceKHR surface_;
     lvk::Device device_;
     lvk::Renderer renderer_;
-    lvk::Pipeline pipeline_;
+    lvk::Model model_;
     vk::raii::DebugUtilsMessengerEXT debug_messenger_;
     std::atomic<bool> quit_{false};
 };
@@ -87,7 +107,7 @@ EngineImpl::EngineImpl() :
     surface_(ConstructSurface()),
     device_(instance_, surface_, window_),
     renderer_(device_),
-    pipeline_(device_, renderer_.GetRenderPass()),
+    model_(device_, vertices, indices),
     #ifndef NDEBUG
     debug_messenger_(instance_, vk::DebugUtilsMessengerCreateInfoEXT{
             .messageSeverity = ENABLE_MESSAGE_SEVERITY,
@@ -162,7 +182,7 @@ vk::raii::Instance EngineImpl::ConstructInstance()
         .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
         .pEngineName = "No engine",
         .engineVersion = VK_MAKE_VERSION(0, 1, 0),
-        .apiVersion = VK_API_VERSION_1_0,
+        .apiVersion = VK_API_VERSION_1_1,
     };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain
@@ -228,105 +248,110 @@ void EngineImpl::Run()
 
 void EngineImpl::RunRender()
 {
-    const std::vector<Vertex> vertices = 
-    {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-    };
 
-    const std::vector<uint32_t> indices =
-    {
-        0, 1, 2, 2, 3, 0
-    };
 
-    lvk::Model model(device_, vertices, indices);
-
-    auto last_frame_time = std::chrono::high_resolution_clock::now();
     while(!quit_)
     {
-        renderer_.DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const lvk::Buffer &uniform_buffer, const vk::raii::RenderPass &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
-        {
-            auto current_frame_time =  std::chrono::high_resolution_clock::now();
-            float frame_time = std::chrono::duration<float, std::chrono::seconds::period>(current_frame_time - last_frame_time).count();
-            last_frame_time = current_frame_time;
-
-            command_buffer.reset();
-            command_buffer.begin({});
-
-            // set viewport
-            vk::Viewport viewport
-            {
-                .x = 0,
-                .y = 0,
-                .width = static_cast<float>(window_extent.width),
-                .height = static_cast<float>(window_extent.height)
-            };
-            vk::ArrayProxy<const vk::Viewport> viewports(viewport);
-            command_buffer.setViewport(0, viewports);
-
-            // set scissor
-            vk::Rect2D scissor
-            {
-                .offset = {0, 0},
-                .extent = window_extent,
-            };
-
-            vk::ArrayProxy<const vk::Rect2D> scissors(scissor);
-            command_buffer.setScissor(0, scissors);
-
-
-            // uniform buffer
-            UniformBufferObject uniform_buffer_data
-            {
-                .model = glm::rotate(glm::mat4(1.0f), frame_time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-                .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-                .projection = glm::perspective(glm::radians(45.0f), window_extent.width / (float) window_extent.height, 0.1f, 10.0f)
-            };
-
-            uniform_buffer_data.projection[1][1] *= -1;
-
-            void *uniform_buffer_address = uniform_buffer.MapMemory();
-            memcpy(uniform_buffer_address, &uniform_buffer_data, sizeof(UniformBufferObject));
-            uniform_buffer.UnmapMemory();
-
-            // begin renderpass
-            vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
-            vk::ClearValue clear_value;
-            clear_value.color = clear_color;
-            vk::RenderPassBeginInfo render_pass_begin_info
-            {
-                .renderPass = *render_pass,
-                .framebuffer = *frame_buffer,
-                .renderArea
-                {
-                    .offset = {0, 0},
-                    .extent = window_extent,
-                },
-                .clearValueCount = 1,
-                .pClearValues = &clear_value
-            };
-
-            command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
-
-            pipeline_.BindPipeline(command_buffer);
-
-            model.BindVertexBuffers(command_buffer);
-            model.Draw(command_buffer);
-
-            command_buffer.endRenderPass();
-
-            command_buffer.end();
-        });
+        using namespace std::placeholders;
+        renderer_.DrawFrame(std::bind(&EngineImpl::DrawFrame, this, _1, _2, _3, _4, _5, _6));
     }
     device_.GetDevice().waitIdle();
 }
+
+void EngineImpl::DrawFrame(
+    const vk::raii::CommandBuffer &command_buffer,
+    const lvk::Buffer &uniform_buffer,
+    const vk::raii::Framebuffer &framebuffer,
+    const vk::raii::DescriptorSet &descriptor_set,
+    const lvk::Pipeline &pipeline,
+    const lvk::Swapchain &swapchain)
+{
+    static auto last_frame_time = std::chrono::high_resolution_clock::now();
+    auto current_frame_time =  std::chrono::high_resolution_clock::now();
+
+    float frame_time = std::chrono::duration<float, std::chrono::seconds::period>(current_frame_time - last_frame_time).count();
+
+    command_buffer.reset();
+    command_buffer.begin({});
+
+    auto window_extent = swapchain.GetExtent();
+    auto &render_pass = swapchain.GetRenderPass();
+    // set viewport
+    vk::Viewport viewport
+    {
+        .x = 0,
+        .y = 0,
+        .width = static_cast<float>(window_extent.width),
+        .height = static_cast<float>(window_extent.height)
+    };
+    vk::ArrayProxy<const vk::Viewport> viewports(viewport);
+    command_buffer.setViewport(0, viewports);
+
+    // set scissor
+    vk::Rect2D scissor
+    {
+        .offset = {0, 0},
+        .extent = window_extent,
+    };
+
+    vk::ArrayProxy<const vk::Rect2D> scissors(scissor);
+    command_buffer.setScissor(0, scissors);
+
+
+    // uniform buffer
+    UniformBufferObject uniform_buffer_data
+    {
+        .model = glm::rotate(glm::mat4(1.0f), frame_time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        .projection = glm::perspective(glm::radians(45.0f), window_extent.width / (float) window_extent.height, 0.1f, 10.0f)
+    };
+
+    uniform_buffer_data.projection[1][1] *= -1;
+
+    void *uniform_buffer_address = uniform_buffer.MapMemory();
+    memcpy(uniform_buffer_address, &uniform_buffer_data, sizeof(UniformBufferObject));
+    uniform_buffer.UnmapMemory();
+
+    // begin renderpass
+    vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
+    vk::ClearValue clear_value;
+    clear_value.color = clear_color;
+    vk::RenderPassBeginInfo render_pass_begin_info
+    {
+        .renderPass = *render_pass,
+        .framebuffer = *framebuffer,
+        .renderArea
+        {
+            .offset = {0, 0},
+            .extent = window_extent,
+        },
+        .clearValueCount = 1,
+        .pClearValues = &clear_value
+    };
+
+    command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
+
+    pipeline.BindPipeline(command_buffer);
+
+    model_.BindVertexBuffers(command_buffer);
+
+    vk::ArrayProxy<const vk::DescriptorSet> descriptor_sets(*descriptor_set);
+    command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline.GetPipelineLayout(), 0, descriptor_sets, {});
+
+    model_.Draw(command_buffer);
+
+    command_buffer.endRenderPass();
+
+    command_buffer.end();
+
+}
+
 
 }
 
 Engine::Engine() : impl_(new detail::EngineImpl)
 {
+    static auto last_frame_time = std::chrono::high_resolution_clock::now();
 }
 
 void Engine::Run()

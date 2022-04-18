@@ -42,11 +42,15 @@ public:
     const vk::raii::PhysicalDevice &GetPhysicalDevice() const { return physical_device_; }
     const vk::raii::Queue &GetQueue() const { return queue_; }
 
-    std::vector<vk::raii::CommandBuffer> AllocateCommandBuffers(uint32_t count) const;
+    std::vector<vk::raii::CommandBuffer> AllocateDrawCommandBuffers(uint32_t count) const;
+    std::vector<vk::raii::CommandBuffer> AllocateCopyCommandBuffers(uint32_t count) const;
+
+    std::vector<vk::raii::DescriptorSet> AllocateDescriptorSets(uint32_t count, const vk::raii::DescriptorSetLayout &descriptor_set_layout) const;
 private:
-   vk::raii::PhysicalDevice PickPhysicalDevice() const;
-   std::optional<uint32_t> FindQueueFamily(const vk::raii::PhysicalDevice &physical_device) const;
-   vk::raii::Device ConstructDevice() const;
+    vk::raii::PhysicalDevice PickPhysicalDevice() const;
+    std::optional<uint32_t> FindQueueFamily(const vk::raii::PhysicalDevice &physical_device) const;
+    vk::raii::Device ConstructDevice() const;
+    vk::raii::DescriptorPool ConstructDescriptorPool() const;
 
 private:
     std::reference_wrapper<const vk::raii::Instance> instance_;
@@ -58,7 +62,9 @@ private:
     uint32_t queue_index_;
     vk::raii::Device device_;
     vk::raii::Queue queue_;
-    vk::raii::CommandPool command_pool_;
+    vk::raii::CommandPool draw_command_pool_;
+    vk::raii::CommandPool copy_command_pool_;
+    vk::raii::DescriptorPool descriptor_pool_;
     VmaAllocator allocator_;
 };
 }  // namespace lvk

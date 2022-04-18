@@ -34,9 +34,75 @@ Pipeline::Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render
     vertex_shader_module_(ConstructShaderModule("shaders/triangle.vert.spv")),
     fragment_shader_module_(ConstructShaderModule("shaders/triangle.frag.spv")),
     pipeline_layout_(ConstructPipelineLayout()),
-    descriptor_set_layout_(ConstructDescriptorSetLayout())
+    descriptor_set_layout_(ConstructDescriptorSetLayout()),
+    pipeline_(ConstructPipeline(render_pass))
+{
+}
+
+
+Pipeline::Pipeline(Pipeline&& other) noexcept :
+    device_(other.device_),
+    vertex_shader_module_(std::move(other.vertex_shader_module_)),
+    fragment_shader_module_(std::move(other.fragment_shader_module_)),
+    pipeline_layout_(std::move(other.pipeline_layout_)),
+    descriptor_set_layout_(std::move(other.descriptor_set_layout_)),
+    pipeline_(std::move(other.pipeline_))
+{
+}
+
+vk::raii::ShaderModule Pipeline::ConstructShaderModule(std::string_view file_name)
+{
+    auto code = detail::ReadShaderFile(file_name);
+    vk::ShaderModuleCreateInfo shader_module_create_info
+    {
+        .codeSize = code.size(),
+        .pCode = reinterpret_cast<uint32_t *>(code.data())
+    };
+
+    return vk::raii::ShaderModule(device_.GetDevice(), shader_module_create_info);
+}
+
+vk::raii::DescriptorSetLayout Pipeline::ConstructDescriptorSetLayout()
+{
+    vk::DescriptorSetLayoutBinding uniform_layout_binding
+    {
+        .binding = 0,
+        .descriptorType = vk::DescriptorType::eUniformBuffer,
+        .descriptorCount = 1,
+        .stageFlags = vk::ShaderStageFlagBits::eVertex,
+        .pImmutableSamplers = nullptr
+    };
+
+    vk::ArrayProxy<vk::DescriptorSetLayoutBinding> layout_bindings(uniform_layout_binding);
+
+    vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_create_info
+    {
+        .bindingCount = layout_bindings.size(),
+        .pBindings = layout_bindings.data() 
+    };
+
+    return vk::raii::DescriptorSetLayout(device_.GetDevice(), descriptor_set_layout_create_info);
+}
+
+vk::raii::PipelineLayout Pipeline::ConstructPipelineLayout()
 {
 
+    vk::ArrayProxy<const vk::DescriptorSetLayout> layouts(*descriptor_set_layout_);
+
+    vk::PipelineLayoutCreateInfo pipeline_layout_create_info
+    {
+        .setLayoutCount = layouts.size(),
+        .pSetLayouts = layouts.data(),
+        .pushConstantRangeCount = 0,
+        .pPushConstantRanges = nullptr
+    };
+
+    return vk::raii::PipelineLayout(device_.GetDevice(), pipeline_layout_create_info);
+}
+
+
+vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &render_pass)
+{
     std::array<vk::PipelineShaderStageCreateInfo, 2> shader_stage_create_infos
     {
         vk::PipelineShaderStageCreateInfo
@@ -84,7 +150,7 @@ Pipeline::Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = vk::PolygonMode::eFill,
         .cullMode = vk::CullModeFlagBits::eBack,
-        .frontFace = vk::FrontFace::eClockwise,
+        .frontFace = vk::FrontFace::eCounterClockwise,
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,
         .depthBiasClamp = 0.0f,
@@ -133,8 +199,6 @@ Pipeline::Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render
         .pDynamicStates = dynamic_states.data()
     };
 
-
-
     vk::GraphicsPipelineCreateInfo graphic_pipeline_create_info
     {
         .stageCount = shader_stage_create_infos.size(),
@@ -154,69 +218,10 @@ Pipeline::Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render
         .basePipelineIndex = -1,
     };
 
-    pipeline_ = vk::raii::Pipeline(device_.GetDevice(), {nullptr}, graphic_pipeline_create_info);
+    return vk::raii::Pipeline(device_.GetDevice(), {nullptr}, graphic_pipeline_create_info);
 }
 
-
-Pipeline::Pipeline(Pipeline&& other) noexcept :
-    device_(other.device_),
-    vertex_shader_module_(std::move(other.vertex_shader_module_)),
-    fragment_shader_module_(std::move(other.fragment_shader_module_)),
-    pipeline_layout_(std::move(other.pipeline_layout_))
-{
-    this->pipeline_ = std::move(other.pipeline_);
-}
-
-vk::raii::ShaderModule Pipeline::ConstructShaderModule(std::string_view file_name)
-{
-    auto code = detail::ReadShaderFile(file_name);
-    vk::ShaderModuleCreateInfo shader_module_create_info
-    {
-        .codeSize = code.size(),
-        .pCode = reinterpret_cast<uint32_t *>(code.data())
-    };
-
-    return vk::raii::ShaderModule(device_.GetDevice(), shader_module_create_info);
-}
-
-vk::raii::DescriptorSetLayout Pipeline::ConstructDescriptorSetLayout()
-{
-    vk::DescriptorSetLayoutBinding unifrom_layout_binding
-    {
-        .binding = 0,
-        .descriptorType = vk::DescriptorType::eUniformBuffer,
-        .descriptorCount = 1,
-        .stageFlags = vk::ShaderStageFlagBits::eVertex,
-        .pImmutableSamplers = nullptr
-    };
-
-    vk::ArrayProxy<vk::DescriptorSetLayoutBinding> layout_bindings(unifrom_layout_binding);
-
-    vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_create_info
-    {
-        .bindingCount = layout_bindings.size(),
-        .pBindings = layout_bindings.data() 
-    };
-    return vk::raii::DescriptorSetLayout(device_.GetDevice(), descriptor_set_layout_create_info);
-}
-
-vk::raii::PipelineLayout Pipeline::ConstructPipelineLayout()
-{
-
-    vk::ArrayProxy<const vk::DescriptorSetLayout> layouts(*descriptor_set_layout_);
-
-    vk::PipelineLayoutCreateInfo pipeline_layout_create_info
-    {
-        .setLayoutCount = layouts.size(),
-        .pSetLayouts = layouts.data(),
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr
-    };
-
-    return vk::raii::PipelineLayout(device_.GetDevice(), pipeline_layout_create_info);
-}
-
-void Pipeline::BindPipeline(const vk::raii::CommandBuffer &command_buffer)
+void Pipeline::BindPipeline(const vk::raii::CommandBuffer &command_buffer) const
 {
     command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline_);
 }

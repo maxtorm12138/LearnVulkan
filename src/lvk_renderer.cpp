@@ -8,7 +8,6 @@
 namespace lvk
 {
 
-constexpr auto MAX_FRAME_IN_FLIGHT = 2;
 const std::unordered_set<vk::Result> WINDOW_RESIZE_ERRORS
 {
     vk::Result::eErrorOutOfDateKHR,
@@ -18,12 +17,14 @@ const std::unordered_set<vk::Result> WINDOW_RESIZE_ERRORS
 Renderer::Renderer(const lvk::Device &device) :
     device_(device),
     swapchain_(new lvk::Swapchain(device_)),
-    command_buffers_(device_.AllocateCommandBuffers(MAX_FRAME_IN_FLIGHT)),
+    pipeline_(device_, swapchain_->GetRenderPass()),
+    descriptor_sets_(device.AllocateDescriptorSets(MAX_FRAMES_IN_FLIGHT, pipeline_.GetUniformBufferDescriptorSetLayout())),
+    command_buffers_(device_.AllocateDrawCommandBuffers(MAX_FRAMES_IN_FLIGHT)),
     uniform_buffers_(ConstructUniformBuffers())
 {
     vk::SemaphoreCreateInfo semaphore_create_info{};
     vk::FenceCreateInfo fence_create_info{.flags = vk::FenceCreateFlagBits::eSignaled};
-    for (int i = 0; i < MAX_FRAME_IN_FLIGHT; i++)
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         image_available_semaphores_.emplace_back(device_.GetDevice(), semaphore_create_info);
         render_finishend_semaphores_.emplace_back(device_.GetDevice(), semaphore_create_info);
@@ -38,7 +39,7 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
         return;
     }
 
-    auto current_frame_in_flight = frame_counter_ % MAX_FRAME_IN_FLIGHT;
+    auto current_frame_in_flight = frame_counter_ % MAX_FRAMES_IN_FLIGHT;
 
     // wait previos swapchain image finish
     vk::ArrayProxy<const vk::Fence> wait_fences(*in_flight_fences_[current_frame_in_flight]);
@@ -63,7 +64,13 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     device_.GetDevice().resetFences(wait_fences);
 
     // callback to record commands
-    recorder(command_buffers_[current_frame_in_flight], uniform_buffers_[current_frame_in_flight], swapchain_->GetRenderPass(), swapchain_->GetFrameBuffer(image_index), swapchain_->GetExtent());
+    recorder(
+        command_buffers_[current_frame_in_flight],
+        uniform_buffers_[current_frame_in_flight],
+        swapchain_->GetFrameBuffer(image_index), 
+        descriptor_sets_[current_frame_in_flight],
+        pipeline_,
+        *swapchain_);
 
 
     vk::ArrayProxy<const vk::Semaphore> wait_semaphores(*image_available_semaphores_[current_frame_in_flight]);
@@ -114,9 +121,34 @@ void Renderer::ReCreateSwapchain()
 std::vector<lvk::Buffer> Renderer::ConstructUniformBuffers()
 {
     std::vector<lvk::Buffer> uniform_buffers;
-    for (int i = 0; i < MAX_FRAME_IN_FLIGHT; i++) 
+    uniform_buffers.reserve(MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
     {
         uniform_buffers.emplace_back(device_.GetAllocator(), vk::BufferCreateInfo{.size = sizeof(UniformBufferObject), .usage=vk::BufferUsageFlagBits::eUniformBuffer,.sharingMode = vk::SharingMode::eExclusive, }, VmaAllocationCreateInfo{.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
+
+        vk::DescriptorBufferInfo descriptor_buffer_info
+        {
+            .buffer = uniform_buffers[i],
+            .offset = 0,
+            .range = sizeof(UniformBufferObject)
+        };
+
+        std::array<vk::WriteDescriptorSet, 1> write_descriptor_sets
+        {
+            vk::WriteDescriptorSet
+            {
+                .dstSet = *descriptor_sets_[i],
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .pImageInfo = nullptr,
+                .pBufferInfo = &descriptor_buffer_info,
+                .pTexelBufferView = nullptr
+            }
+        };
+
+        device_.GetDevice().updateDescriptorSets(write_descriptor_sets, {});
     }
     return uniform_buffers;
 }

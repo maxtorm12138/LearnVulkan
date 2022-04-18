@@ -2,6 +2,7 @@
 
 // std
 #include <unordered_set>
+#include <array>
 
 // sdl2
 #include <SDL_vulkan.h>
@@ -31,7 +32,9 @@ Device::Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &s
     queue_index_(FindQueueFamily(physical_device_).value()),
     device_(ConstructDevice()),
     queue_(device_.getQueue(queue_index_, 0)),
-    command_pool_(device_, {.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,.queueFamilyIndex = queue_index_})
+    draw_command_pool_(device_, {.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,.queueFamilyIndex = queue_index_}),
+    copy_command_pool_(device_, {.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,.queueFamilyIndex = queue_index_}),
+    descriptor_pool_(ConstructDescriptorPool())
 {
 
     VmaAllocatorCreateInfo allocator_create_info
@@ -39,7 +42,7 @@ Device::Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &s
         .physicalDevice = *physical_device_,
         .device = *device_,
         .instance = *instance_.get(),
-        .vulkanApiVersion = VK_API_VERSION_1_0
+        .vulkanApiVersion = VK_API_VERSION_1_1
     };
 
     auto result = vmaCreateAllocator(&allocator_create_info, &allocator_);
@@ -57,7 +60,9 @@ Device::Device(Device &&other) noexcept :
     queue_index_(other.queue_index_),
     device_(std::move(other.device_)),
     queue_(std::move(other.queue_)),
-    command_pool_(std::move(other.command_pool_))
+    draw_command_pool_(std::move(other.draw_command_pool_)),
+    copy_command_pool_(std::move(other.copy_command_pool_)),
+    descriptor_pool_(std::move(other.descriptor_pool_))
 {
     std::swap(this->allocator_, other.allocator_);
 }
@@ -164,11 +169,32 @@ vk::raii::Device Device::ConstructDevice() const
     });
 }
 
-std::vector<vk::raii::CommandBuffer> Device::AllocateCommandBuffers(uint32_t count) const
+vk::raii::DescriptorPool Device::ConstructDescriptorPool() const
+{
+    std::array<vk::DescriptorPoolSize, 1> pool_sizes
+    {
+        vk::DescriptorPoolSize
+        {
+            .type = vk::DescriptorType::eUniformBuffer,
+            .descriptorCount = MAX_FRAMES_IN_FLIGHT
+        }
+    };
+
+    vk::DescriptorPoolCreateInfo descriptor_pool_create_info
+    {
+        .maxSets = MAX_FRAMES_IN_FLIGHT,
+        .poolSizeCount = pool_sizes.size(),
+        .pPoolSizes = pool_sizes.data(),
+    };
+
+    return vk::raii::DescriptorPool(device_, descriptor_pool_create_info);
+}
+
+std::vector<vk::raii::CommandBuffer> Device::AllocateDrawCommandBuffers(uint32_t count) const
 {
     vk::CommandBufferAllocateInfo command_buffer_allocate_info
     {
-        .commandPool = *command_pool_,
+        .commandPool = *draw_command_pool_,
         .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount =count 
     };
@@ -176,4 +202,29 @@ std::vector<vk::raii::CommandBuffer> Device::AllocateCommandBuffers(uint32_t cou
    return device_.allocateCommandBuffers(command_buffer_allocate_info);
 }
 
+std::vector<vk::raii::CommandBuffer> Device::AllocateCopyCommandBuffers(uint32_t count) const
+{
+    vk::CommandBufferAllocateInfo command_buffer_allocate_info
+    {
+        .commandPool = *copy_command_pool_,
+        .level = vk::CommandBufferLevel::ePrimary,
+        .commandBufferCount =count 
+    };
+
+   return device_.allocateCommandBuffers(command_buffer_allocate_info);
+}
+
+std::vector<vk::raii::DescriptorSet> Device::AllocateDescriptorSets(uint32_t count, const vk::raii::DescriptorSetLayout &descriptor_set_layout) const
+{
+    std::vector<vk::DescriptorSetLayout> layouts(count, *descriptor_set_layout);
+
+    vk::DescriptorSetAllocateInfo descriptor_set_allocate_info
+    {
+        .descriptorPool = *descriptor_pool_,
+        .descriptorSetCount = count,
+        .pSetLayouts = layouts.data()
+    };
+
+    return device_.allocateDescriptorSets(descriptor_set_allocate_info);
+}
 }// namespace lvk

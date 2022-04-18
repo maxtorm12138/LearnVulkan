@@ -42,7 +42,7 @@ Model::Model(const lvk::Device& device, const std::vector<Vertex> &vertices, con
 
 void Model::CopyBuffer(const lvk::Buffer &stage_buffer, const lvk::Buffer &dest_buffer, uint64_t size)
 {
-    auto command_buffers = device_.AllocateCommandBuffers(1);
+    auto command_buffers = device_.AllocateCopyCommandBuffers(1);
     auto &command_buffer = command_buffers[0];
     command_buffer.begin(vk::CommandBufferBeginInfo{.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
     vk::BufferCopy region

@@ -6,6 +6,9 @@
 
 namespace lvk
 {
+
+constexpr auto MAX_FRAMES_IN_FLIGHT = 2;
+
 constexpr std::string_view EXT_NAME_VK_KHR_portability_subset = "VK_KHR_portability_subset";
 
 constexpr std::string_view EXT_NAME_VK_KHR_get_physical_device_properties2 = "VK_KHR_get_physical_device_properties2";
