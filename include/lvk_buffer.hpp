@@ -31,7 +31,7 @@ public:
     operator vk::Buffer() { return buffer_; }
 private:
     std::reference_wrapper<const VmaAllocator> allocator_;
-    VmaAllocation allocation_;
+    VmaAllocation allocation_{VK_NULL_HANDLE};
     VmaAllocationInfo allocation_info_;
     vk::Buffer buffer_;
 };

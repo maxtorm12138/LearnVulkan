@@ -60,7 +60,6 @@ private:
 
     vk::raii::Instance ConstructInstance();
     vk::raii::SurfaceKHR ConstructSurface();
-    VmaAllocator ConstructAllocator();
 
 private:
     vk::raii::Context context_;
@@ -163,7 +162,7 @@ vk::raii::Instance EngineImpl::ConstructInstance()
         .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
         .pEngineName = "No engine",
         .engineVersion = VK_MAKE_VERSION(0, 1, 0),
-        .apiVersion = VK_API_VERSION_1_1,
+        .apiVersion = VK_API_VERSION_1_0,
     };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain
@@ -199,10 +198,6 @@ vk::raii::SurfaceKHR EngineImpl::ConstructSurface()
         throw std::runtime_error(fmt::format("SDL_Vulkan_CreateSurface fail description: {}", SDL_GetError()));
     }
     return vk::raii::SurfaceKHR(instance_, surface);
-}
-
-VmaAllocator EngineImpl::ConstructAllocator()
-{
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL EngineImpl::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* data, void*)

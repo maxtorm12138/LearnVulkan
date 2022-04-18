@@ -22,18 +22,26 @@ Buffer::Buffer(Buffer &&other) noexcept :
     allocator_(other.allocator_)
 {
     std::swap(this->buffer_, other.buffer_);
+    std::swap(this->allocation_, other.allocation_);
+    std::swap(this->allocation_info_, other.allocation_info_);
 }
 
 Buffer &Buffer::operator=(Buffer &&other) noexcept
 {
     std::swap(this->allocator_, other.allocator_);
     std::swap(this->buffer_, other.buffer_);
+    std::swap(this->allocation_, other.allocation_);
+    std::swap(this->allocation_info_, other.allocation_info_);
     return *this;
 }
 
 Buffer::~Buffer()
 {
-    vmaDestroyBuffer(allocator_, buffer_, allocation_);
+    // vmaDestroyBuffer isn't null safe
+    if (allocation_ != VK_NULL_HANDLE)
+    {
+        vmaDestroyBuffer(allocator_, buffer_, allocation_);
+    }
 }
 
 void *Buffer::MapMemory() const

@@ -116,7 +116,7 @@ std::vector<lvk::Buffer> Renderer::ConstructUniformBuffers()
     std::vector<lvk::Buffer> uniform_buffers;
     for (int i = 0; i < MAX_FRAME_IN_FLIGHT; i++) 
     {
-        uniform_buffers.emplace_back(device_.GetAllocator(), vk::BufferCreateInfo{.usage=vk::BufferUsageFlagBits::eUniformBuffer,.sharingMode = vk::SharingMode::eExclusive}, VmaAllocationCreateInfo{.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
+        uniform_buffers.emplace_back(device_.GetAllocator(), vk::BufferCreateInfo{.size = sizeof(UniformBufferObject), .usage=vk::BufferUsageFlagBits::eUniformBuffer,.sharingMode = vk::SharingMode::eExclusive, }, VmaAllocationCreateInfo{.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
     }
     return uniform_buffers;
 }
