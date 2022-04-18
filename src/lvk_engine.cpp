@@ -16,8 +16,7 @@
 #include <fmt/format.h>
 
 // VMA
-#define VMA_IMPLEMENTATION
-#include <vk_mem_alloc.hpp>
+#include <vk_mem_alloc.h>
 
 // module
 #include "lvk_definitions.hpp"
@@ -57,7 +56,7 @@ private:
 
     vk::raii::Instance ConstructInstance();
     vk::raii::SurfaceKHR ConstructSurface();
-    vma::Allocator ConstructAllocator();
+    VmaAllocator ConstructAllocator();
 
 private:
     vk::raii::Context context_;
@@ -67,7 +66,7 @@ private:
     vk::raii::Instance instance_;
     vk::raii::SurfaceKHR surface_;
     lvk::Device device_;
-    vma::Allocator allocator_;
+    VmaAllocator allocator_;
     lvk::Renderer renderer_;
     lvk::Pipeline pipeline_;
     vk::raii::DebugUtilsMessengerEXT debug_messenger_;
@@ -85,12 +84,7 @@ EngineImpl::EngineImpl() :
     instance_(ConstructInstance()),
     surface_(ConstructSurface()),
     device_(instance_, surface_, window_),
-    allocator_(vma::createAllocator(vma::AllocatorCreateInfo{
-        .physicalDevice = *device_.GetPhysicalDevice(),
-        .device = *device_.GetDevice(),
-        .instance = *instance_,
-        .vulkanApiVersion = VK_API_VERSION_1_0,
-    })),
+    allocator_(ConstructAllocator()),
     renderer_(device_),
     pipeline_(device_, renderer_.GetRenderPass()),
     #ifndef NDEBUG
@@ -107,7 +101,7 @@ EngineImpl::EngineImpl() :
 
 EngineImpl::~EngineImpl()
 {
-    allocator_.destroy();
+    vmaDestroyAllocator(allocator_);
 }
 
 vk::raii::Instance EngineImpl::ConstructInstance()
@@ -168,7 +162,7 @@ vk::raii::Instance EngineImpl::ConstructInstance()
         .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
         .pEngineName = "No engine",
         .engineVersion = VK_MAKE_VERSION(0, 1, 0),
-        .apiVersion = VK_API_VERSION_1_0,
+        .apiVersion = VK_API_VERSION_1_1,
     };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain
@@ -206,6 +200,23 @@ vk::raii::SurfaceKHR EngineImpl::ConstructSurface()
     return vk::raii::SurfaceKHR(instance_, surface);
 }
 
+VmaAllocator EngineImpl::ConstructAllocator()
+{
+    VmaAllocator allocator;
+    VmaAllocatorCreateInfo allocator_create_info;
+    allocator_create_info.physicalDevice = *device_.GetPhysicalDevice();
+    allocator_create_info.device = *device_.GetDevice();
+    allocator_create_info.instance = *instance_;
+    allocator_create_info.vulkanApiVersion = VK_API_VERSION_1_1;
+    auto result = vmaCreateAllocator(&allocator_create_info, &allocator);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(fmt::format("vmaCreateAllocator fail result: {}", result));
+    }
+
+    return allocator;
+}
+
 VKAPI_ATTR VkBool32 VKAPI_CALL EngineImpl::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* data, void*)
 {
     BOOST_LOG_TRIVIAL(info) << data->pMessage;
@@ -215,7 +226,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL EngineImpl::DebugCallback(VkDebugUtilsMessageSeve
 void EngineImpl::Run()
 {
     window_.Show();
-    std::jthread render_thread([this](){RunRender();});
+    std::thread render_thread([this](){RunRender();});
     SDL_Event event;
     while (!quit_)
     {
@@ -229,6 +240,7 @@ void EngineImpl::Run()
             renderer_.NotifyWindowEvent(&event);
         }
     }
+    render_thread.join();
 }
 
 void EngineImpl::RunRender()

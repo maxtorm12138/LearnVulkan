@@ -16,21 +16,20 @@
 namespace lvk
 {
 
-PACK(struct Vertex
+struct Vertex
 {
     glm::vec2 posision;
     glm::vec3 color;
     static const std::vector<vk::VertexInputBindingDescription> &GetVertexBindingDescriptions();
     static const std::vector<vk::VertexInputAttributeDescription> &GetVertexInputAttributeDescriptions();
-});
+};
 
-PACK(struct Transform
+struct Transform
 {
-    glm::mat4 model;
+    glm::mat4 model{1.f};
     glm::mat4 view;
     glm::mat4 projection;
-    static const vk::DescriptorSetLayoutCreateInfo &GetDesciptorSetLayoutCreateInfo();
-});
+};
 
 }
 #endif

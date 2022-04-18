@@ -6,28 +6,15 @@
 namespace lvk
 {
 
-Model::Model(const lvk::Device& device, const vma::Allocator &allocator, const std::vector<Vertex> &vertices) :
+Model::Model(const lvk::Device& device, const VmaAllocator &allocator, const std::vector<Vertex> &vertices) :
     device_(device),
     allocator_(allocator),
     vertex_count_(vertices.size()),
-    vertex_buffer_(allocator, vk::BufferCreateInfo{
-        .size = vertex_count_ * sizeof(Vertex),
-        .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        .sharingMode = vk::SharingMode::eExclusive
-    }, vma::AllocationCreateInfo{
-        .usage = vma::MemoryUsage::eAuto,
-    })
+    vertex_buffer_(allocator, {.size = vertex_count_ * sizeof(Vertex), .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, .sharingMode = vk::SharingMode::eExclusive}, {.usage =  VMA_MEMORY_USAGE_AUTO,})
 {
     auto vertices_size = vertices.size() * sizeof(Vertex);
 
-    lvk::Buffer stage_buffer(allocator, {
-        .size = vertices_size,
-        .usage = vk::BufferUsageFlagBits::eTransferSrc,
-        .sharingMode = vk::SharingMode::eExclusive
-    }, {
-        .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
-        .usage = vma::MemoryUsage::eAuto
-    });
+    lvk::Buffer stage_buffer(allocator, {.size = vertices_size, .usage = vk::BufferUsageFlagBits::eTransferSrc,.sharingMode = vk::SharingMode::eExclusive}, {.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
 
     auto stage_ptr = stage_buffer.MapMemory();
     memcpy(stage_ptr, vertices.data(), vertices_size);
@@ -36,29 +23,16 @@ Model::Model(const lvk::Device& device, const vma::Allocator &allocator, const s
     CopyBuffer(stage_buffer, vertex_buffer_, vertices_size);
 }
 
-Model::Model(const lvk::Device& device, const vma::Allocator &allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices) :
+Model::Model(const lvk::Device& device, const VmaAllocator &allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices) :
     Model(device, allocator, vertices)
 {
     index_count_ = indices.size();
 
     auto indices_size = indices.size() * sizeof(uint32_t);
 
-    index_buffer_.emplace(allocator_, vk::BufferCreateInfo{
-        .size = indices_size,
-        .usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        .sharingMode = vk::SharingMode::eExclusive
-    }, vma::AllocationCreateInfo{
-        .usage = vma::MemoryUsage::eAuto,
-    });
+    index_buffer_.emplace(lvk::Buffer(allocator_, {.size = indices_size,.usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,.sharingMode = vk::SharingMode::eExclusive}, {.usage = VMA_MEMORY_USAGE_AUTO}));
 
-    lvk::Buffer stage_buffer(allocator, {
-        .size = indices_size,
-        .usage = vk::BufferUsageFlagBits::eTransferSrc,
-        .sharingMode = vk::SharingMode::eExclusive
-    }, {
-        .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
-        .usage = vma::MemoryUsage::eAuto
-    });
+    lvk::Buffer stage_buffer(allocator, {.size = indices_size,.usage = vk::BufferUsageFlagBits::eTransferSrc,.sharingMode = vk::SharingMode::eExclusive}, {.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
 
     auto stage_ptr = stage_buffer.MapMemory();
     memcpy(stage_ptr, indices.data(), indices_size);

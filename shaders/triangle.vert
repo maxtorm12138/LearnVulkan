@@ -1,10 +1,10 @@
 #version 460
-layout(binding = 0) uniform uniform_buffer
+layout(binding = 0) uniform UniformBufferObject
 {
     mat4 model;
     mat4 view;
     mat4 projection;
-}
+} uniform_buffer;
 
 layout(location = 0) in vec2 in_posision;
 layout(location = 1) in vec3 in_color;

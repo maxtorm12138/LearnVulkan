@@ -15,7 +15,7 @@
 // vulkan
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
-#include <vk_mem_alloc.hpp>
+#include <vk_mem_alloc.h>
 
 
 namespace lvk
@@ -23,8 +23,8 @@ namespace lvk
 class Model : public boost::noncopyable
 {
 public:
-    Model(const lvk::Device& device, const vma::Allocator &allocator, const std::vector<Vertex> &vertices);
-    Model(const lvk::Device& device, const vma::Allocator &allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
+    Model(const lvk::Device& device, const VmaAllocator &allocator, const std::vector<Vertex> &vertices);
+    Model(const lvk::Device& device, const VmaAllocator &allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
 
 public:
     void BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer);
@@ -36,7 +36,8 @@ private:
 
 private:
     const lvk::Device& device_;
-    const vma::Allocator &allocator_;
+    const VmaAllocator &allocator_;
+
 private:
     uint32_t vertex_count_{0};
     uint32_t index_count_{0};
