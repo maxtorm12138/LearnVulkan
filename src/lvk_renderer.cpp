@@ -18,7 +18,8 @@ const std::unordered_set<vk::Result> WINDOW_RESIZE_ERRORS
 Renderer::Renderer(const lvk::Device &device) :
     device_(device),
     swapchain_(new lvk::Swapchain(device_)),
-    command_buffers_(device_.AllocateCommandBuffers(MAX_FRAME_IN_FLIGHT))
+    command_buffers_(device_.AllocateCommandBuffers(MAX_FRAME_IN_FLIGHT)),
+    uniform_buffers_(ConstructUniformBuffers())
 {
     vk::SemaphoreCreateInfo semaphore_create_info{};
     vk::FenceCreateInfo fence_create_info{.flags = vk::FenceCreateFlagBits::eSignaled};
@@ -62,7 +63,7 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     device_.GetDevice().resetFences(wait_fences);
 
     // callback to record commands
-    recorder(command_buffers_[current_frame_in_flight], swapchain_->GetRenderPass(), swapchain_->GetFrameBuffer(image_index), swapchain_->GetExtent());
+    recorder(command_buffers_[current_frame_in_flight], uniform_buffers_[current_frame_in_flight], swapchain_->GetRenderPass(), swapchain_->GetFrameBuffer(image_index), swapchain_->GetExtent());
 
 
     vk::ArrayProxy<const vk::Semaphore> wait_semaphores(*image_available_semaphores_[current_frame_in_flight]);
@@ -108,6 +109,16 @@ void Renderer::ReCreateSwapchain()
     std::shared_ptr<lvk::Swapchain> old_swapchain(swapchain_.release());
     swapchain_ = std::make_unique<lvk::Swapchain>(device_, old_swapchain);
     window_event_flags_.window_resized_ = false;
+}
+
+std::vector<lvk::Buffer> Renderer::ConstructUniformBuffers()
+{
+    std::vector<lvk::Buffer> uniform_buffers;
+    for (int i = 0; i < MAX_FRAME_IN_FLIGHT; i++) 
+    {
+        uniform_buffers.emplace_back(device_.GetAllocator(), vk::BufferCreateInfo{.usage=vk::BufferUsageFlagBits::eUniformBuffer,.sharingMode = vk::SharingMode::eExclusive}, VmaAllocationCreateInfo{.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
+    }
+    return uniform_buffers;
 }
 
 void Renderer::NotifyWindowEvent(SDL_Event *event)

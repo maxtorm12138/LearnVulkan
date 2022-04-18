@@ -24,11 +24,17 @@ public:
     void BindPipeline(const vk::raii::CommandBuffer &command_buffer);
 public:
     const vk::raii::Pipeline &GetPipeline() const { return pipeline_; }
+
+private:
+    vk::raii::ShaderModule ConstructShaderModule(std::string_view file_name);
+    vk::raii::DescriptorSetLayout ConstructDescriptorSetLayout();
+    vk::raii::PipelineLayout ConstructPipelineLayout();
 private:
     const lvk::Device &device_;
 
-    vk::raii::ShaderModule vertex_shader_module_{nullptr};
-    vk::raii::ShaderModule fragment_shader_module_{nullptr};
+    vk::raii::ShaderModule vertex_shader_module_;
+    vk::raii::ShaderModule fragment_shader_module_;
+    vk::raii::DescriptorSetLayout descriptor_set_layout_{nullptr};
     vk::raii::PipelineLayout pipeline_layout_{nullptr};
     vk::raii::Pipeline pipeline_{nullptr};
 };

@@ -57,9 +57,25 @@ Device::Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &s
         .pEnabledFeatures = &physical_device_features
     });
 
+    VmaAllocatorCreateInfo allocator_create_info;
+    allocator_create_info.physicalDevice = *physical_device_;
+    allocator_create_info.device = *device_;
+    allocator_create_info.instance = *instance_;
+    allocator_create_info.vulkanApiVersion = VK_API_VERSION_1_1;
+    auto result = vmaCreateAllocator(&allocator_create_info, &allocator_);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error(fmt::format("vmaCreateAllocator fail result: {}", result));
+    }
+
     queue_ = device_.getQueue(queue_index_, 0);
 
     command_pool_ = vk::raii::CommandPool(device_, vk::CommandPoolCreateInfo{
+        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        .queueFamilyIndex = queue_index_
+    });
+
+    load_model_command_pool_ = vk::raii::CommandPool(device_, vk::CommandPoolCreateInfo{
         .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
         .queueFamilyIndex = queue_index_
     });
@@ -85,6 +101,11 @@ Device &Device::operator=(Device &&other) noexcept
     this->queue_index_ = other.queue_index_;
     this->command_pool_ = std::move(other.command_pool_);
     return *this;
+}
+
+Device::~Device()
+{
+    vmaDestroyAllocator(allocator_);
 }
 
 std::pair<vk::raii::PhysicalDevice, uint32_t> Device::PickPhysicalDevice() const
@@ -152,6 +173,18 @@ std::vector<vk::raii::CommandBuffer> Device::AllocateCommandBuffers(uint32_t cou
     vk::CommandBufferAllocateInfo command_buffer_allocate_info
     {
         .commandPool = *command_pool_,
+        .level = vk::CommandBufferLevel::ePrimary,
+        .commandBufferCount =count 
+    };
+
+   return device_.allocateCommandBuffers(command_buffer_allocate_info);
+}
+
+std::vector<vk::raii::CommandBuffer> Device::AllocateCommandBuffers4Model(uint32_t count) const
+{
+    vk::CommandBufferAllocateInfo command_buffer_allocate_info
+    {
+        .commandPool = *load_model_command_pool_,
         .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount =count 
     };

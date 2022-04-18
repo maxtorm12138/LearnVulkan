@@ -23,8 +23,8 @@ namespace lvk
 class Model : public boost::noncopyable
 {
 public:
-    Model(const lvk::Device& device, const VmaAllocator &allocator, const std::vector<Vertex> &vertices);
-    Model(const lvk::Device& device, const VmaAllocator &allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
+    Model(const lvk::Device& device, const std::vector<Vertex> &vertices);
+    Model(const lvk::Device& device, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
 
 public:
     void BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer);
@@ -36,7 +36,6 @@ private:
 
 private:
     const lvk::Device& device_;
-    const VmaAllocator &allocator_;
 
 private:
     uint32_t vertex_count_{0};

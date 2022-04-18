@@ -18,6 +18,10 @@
 // VMA
 #include <vk_mem_alloc.h>
 
+// glm
+#include <glm/gtc/matrix_transform.hpp>
+
+
 // module
 #include "lvk_definitions.hpp"
 #include "lvk_model.hpp"
@@ -66,7 +70,6 @@ private:
     vk::raii::Instance instance_;
     vk::raii::SurfaceKHR surface_;
     lvk::Device device_;
-    VmaAllocator allocator_;
     lvk::Renderer renderer_;
     lvk::Pipeline pipeline_;
     vk::raii::DebugUtilsMessengerEXT debug_messenger_;
@@ -84,7 +87,6 @@ EngineImpl::EngineImpl() :
     instance_(ConstructInstance()),
     surface_(ConstructSurface()),
     device_(instance_, surface_, window_),
-    allocator_(ConstructAllocator()),
     renderer_(device_),
     pipeline_(device_, renderer_.GetRenderPass()),
     #ifndef NDEBUG
@@ -101,7 +103,6 @@ EngineImpl::EngineImpl() :
 
 EngineImpl::~EngineImpl()
 {
-    vmaDestroyAllocator(allocator_);
 }
 
 vk::raii::Instance EngineImpl::ConstructInstance()
@@ -202,19 +203,6 @@ vk::raii::SurfaceKHR EngineImpl::ConstructSurface()
 
 VmaAllocator EngineImpl::ConstructAllocator()
 {
-    VmaAllocator allocator;
-    VmaAllocatorCreateInfo allocator_create_info;
-    allocator_create_info.physicalDevice = *device_.GetPhysicalDevice();
-    allocator_create_info.device = *device_.GetDevice();
-    allocator_create_info.instance = *instance_;
-    allocator_create_info.vulkanApiVersion = VK_API_VERSION_1_1;
-    auto result = vmaCreateAllocator(&allocator_create_info, &allocator);
-    if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error(fmt::format("vmaCreateAllocator fail result: {}", result));
-    }
-
-    return allocator;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL EngineImpl::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* data, void*)
@@ -258,15 +246,18 @@ void EngineImpl::RunRender()
         0, 1, 2, 2, 3, 0
     };
 
-    lvk::Model model(device_, allocator_, vertices, indices);
+    lvk::Model model(device_, vertices, indices);
 
-    auto begin_time = std::chrono::high_resolution_clock::now();
+    auto last_frame_time = std::chrono::high_resolution_clock::now();
     while(!quit_)
     {
-        renderer_.DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const vk::raii::RenderPass &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
+        renderer_.DrawFrame([&, this](const vk::raii::CommandBuffer &command_buffer, const lvk::Buffer &uniform_buffer, const vk::raii::RenderPass &render_pass, const vk::raii::Framebuffer &frame_buffer, vk::Extent2D window_extent)
         {
-            command_buffer.reset();
+            auto current_frame_time =  std::chrono::high_resolution_clock::now();
+            float frame_time = std::chrono::duration<float, std::chrono::seconds::period>(current_frame_time - last_frame_time).count();
+            last_frame_time = current_frame_time;
 
+            command_buffer.reset();
             command_buffer.begin({});
 
             // set viewport
@@ -289,6 +280,21 @@ void EngineImpl::RunRender()
 
             vk::ArrayProxy<const vk::Rect2D> scissors(scissor);
             command_buffer.setScissor(0, scissors);
+
+
+            // uniform buffer
+            UniformBufferObject uniform_buffer_data
+            {
+                .model = glm::rotate(glm::mat4(1.0f), frame_time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+                .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+                .projection = glm::perspective(glm::radians(45.0f), window_extent.width / (float) window_extent.height, 0.1f, 10.0f)
+            };
+
+            uniform_buffer_data.projection[1][1] *= -1;
+
+            void *uniform_buffer_address = uniform_buffer.MapMemory();
+            memcpy(uniform_buffer_address, &uniform_buffer_data, sizeof(UniformBufferObject));
+            uniform_buffer.UnmapMemory();
 
             // begin renderpass
             vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
@@ -319,8 +325,6 @@ void EngineImpl::RunRender()
             command_buffer.end();
         });
     }
-    auto end_time = std::chrono::high_resolution_clock::now();
-    BOOST_LOG_TRIVIAL(info) << "avg fps: " << renderer_.GetFrameCounter() / (std::chrono::duration_cast<std::chrono::seconds>(end_time-begin_time).count());
     device_.GetDevice().waitIdle();
 }
 
