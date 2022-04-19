@@ -13,14 +13,13 @@ namespace lvk
 {
 
 Pipeline::Pipeline(const lvk::Device& device,
-         const lvk::Shader vertex_shader,
-         const lvk::Shader fragment_shader,
+         const lvk::Shader &vertex_shader,
+         const lvk::Shader &fragment_shader,
          const vk::raii::RenderPass &render_pass) :
     device_(device),
     vertex_shader_(vertex_shader),
     fragment_shader_(fragment_shader),
     pipeline_layout_(ConstructPipelineLayout()),
-    descriptor_set_layout_(ConstructDescriptorSetLayout()),
     pipeline_(ConstructPipeline(render_pass))
 {
 }
@@ -31,32 +30,8 @@ Pipeline::Pipeline(Pipeline&& other) noexcept :
     vertex_shader_(other.vertex_shader_),
     fragment_shader_(other.fragment_shader_),
     pipeline_layout_(std::move(other.pipeline_layout_)),
-    descriptor_set_layout_(std::move(other.descriptor_set_layout_)),
     pipeline_(std::move(other.pipeline_))
-{
-}
-
-vk::raii::DescriptorSetLayout Pipeline::ConstructDescriptorSetLayout()
-{
-    vk::DescriptorSetLayoutBinding uniform_layout_binding
-    {
-        .binding = 0,
-        .descriptorType = vk::DescriptorType::eUniformBuffer,
-        .descriptorCount = 1,
-        .stageFlags = vk::ShaderStageFlagBits::eVertex,
-        .pImmutableSamplers = nullptr
-    };
-
-    vk::ArrayProxy<vk::DescriptorSetLayoutBinding> layout_bindings(uniform_layout_binding);
-
-    vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_create_info
-    {
-        .bindingCount = layout_bindings.size(),
-        .pBindings = layout_bindings.data() 
-    };
-
-    return vk::raii::DescriptorSetLayout(device_.GetDevice(), descriptor_set_layout_create_info);
-}
+{}
 
 vk::raii::PipelineLayout Pipeline::ConstructPipelineLayout()
 {

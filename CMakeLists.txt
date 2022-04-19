@@ -17,13 +17,6 @@ find_package(Vulkan REQUIRED FATAL_ERROR)
 # include boost
 find_package(Boost REQUIRED COMPONENTS log)
 
-# include vulkan hpp
-if (DEFINED ENV{VULKAN_HPP_DIR})
-    set(VULKAN_HPP_INCLUDE_DIR $ENV{VULKAN_HPP_DIR})
-else ()
-    message(FATAL_ERROR "VULKAN_HPP_DIR NOT SET")
-endif ()
-
 # fmt lib
 add_subdirectory("third_party/fmt")
 
@@ -46,7 +39,7 @@ function(target_add_shader TARGET SHADER)
 endfunction(target_add_shader TARGET SHADER)
 
 add_library(vma include/vma/vk_mem_alloc.h src/vma/vk_mem_alloc.cpp)
-target_include_directories(vma PRIVATE include/ ${Vulkan_INCLUDE_DIRS})
+target_include_directories(vma PRIVATE ${Vulkan_INCLUDE_DIRS} include/)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(vma PRIVATE -Wno-nullability-completeness)
 endif()
@@ -54,14 +47,13 @@ endif()
 add_library(stb include/stb/stb_image.h src/stb/stb_image.cpp)
 target_include_directories(stb PRIVATE include/)
 
-
 file(GLOB LVK_SRCS include/lvk_*.hpp src/lvk_*.cpp)
 add_library(lvk ${LVK_SRCS})
 target_compile_definitions(lvk PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVULKAN_HPP_NO_SPACESHIP_OPERATOR -DGLM_FORCE_RADIANS -DGLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_add_shader(lvk triangle.frag)
 target_add_shader(lvk triangle.vert)
-target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} ${VULKAN_HPP_INCLUDE_DIR} ${SDL2PP_INCLUDE_DIRS} include/ )
-target_link_libraries(lvk PRIVATE ${SDL2PP_LIBRARIES} vma Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
+target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} ${SDL2PP_INCLUDE_DIRS} include/ )
+target_link_libraries(lvk PRIVATE ${SDL2PP_LIBRARIES} vma stb Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
 
 add_executable(draw_triangle src/draw_triangle.cpp)
 target_include_directories(draw_triangle PRIVATE include/)
