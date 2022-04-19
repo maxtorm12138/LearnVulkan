@@ -15,7 +15,7 @@
 // vulkan
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 
 namespace lvk
