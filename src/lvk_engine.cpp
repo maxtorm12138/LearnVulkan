@@ -70,7 +70,7 @@ private:
     void RunRender();
     void DrawFrame(
         const vk::raii::CommandBuffer &command_buffer,
-        const lvk::Buffer &uniform_buffer,
+        // const lvk::Buffer &uniform_buffer,
         const vk::raii::Framebuffer &framebuffer,
         const vk::raii::DescriptorSet &descriptor_set,
         const lvk::Pipeline &pipeline,
@@ -253,14 +253,14 @@ void EngineImpl::RunRender()
     while(!quit_)
     {
         using namespace std::placeholders;
-        renderer_.DrawFrame(std::bind(&EngineImpl::DrawFrame, this, _1, _2, _3, _4, _5, _6));
+        renderer_.DrawFrame(std::bind(&EngineImpl::DrawFrame, this, _1, _2, _3, _4, _5));
     }
     device_.GetDevice().waitIdle();
 }
 
 void EngineImpl::DrawFrame(
     const vk::raii::CommandBuffer &command_buffer,
-    const lvk::Buffer &uniform_buffer,
+    // const lvk::Buffer &uniform_buffer,
     const vk::raii::Framebuffer &framebuffer,
     const vk::raii::DescriptorSet &descriptor_set,
     const lvk::Pipeline &pipeline,
@@ -282,7 +282,9 @@ void EngineImpl::DrawFrame(
         .x = 0,
         .y = 0,
         .width = static_cast<float>(window_extent.width),
-        .height = static_cast<float>(window_extent.height)
+        .height = static_cast<float>(window_extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f
     };
     vk::ArrayProxy<const vk::Viewport> viewports(viewport);
     command_buffer.setViewport(0, viewports);
@@ -299,6 +301,7 @@ void EngineImpl::DrawFrame(
 
 
     // uniform buffer
+    /*
     UniformBufferObject uniform_buffer_data
     {
         .model = glm::rotate(glm::mat4(1.0f), frame_time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
@@ -311,6 +314,7 @@ void EngineImpl::DrawFrame(
     void *uniform_buffer_address = uniform_buffer.MapMemory();
     memcpy(uniform_buffer_address, &uniform_buffer_data, sizeof(UniformBufferObject));
     uniform_buffer.UnmapMemory();
+    */
 
     // begin renderpass
     vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
@@ -335,8 +339,10 @@ void EngineImpl::DrawFrame(
 
     model_.BindVertexBuffers(command_buffer);
 
+    /*
     vk::ArrayProxy<const vk::DescriptorSet> descriptor_sets(*descriptor_set);
     command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline.GetPipelineLayout(), 0, descriptor_sets, {});
+    */
 
     model_.Draw(command_buffer);
 

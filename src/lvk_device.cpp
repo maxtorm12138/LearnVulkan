@@ -182,6 +182,7 @@ vk::raii::DescriptorPool Device::ConstructDescriptorPool() const
 
     vk::DescriptorPoolCreateInfo descriptor_pool_create_info
     {
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = MAX_FRAMES_IN_FLIGHT,
         .poolSizeCount = pool_sizes.size(),
         .pPoolSizes = pool_sizes.data(),

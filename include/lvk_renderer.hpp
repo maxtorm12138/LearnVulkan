@@ -45,7 +45,7 @@ public:
     
     using RecordCommandBufferCallback = std::function<
         void(const vk::raii::CommandBuffer &command_buffer,
-             const lvk::Buffer &uniform_buffer,
+             // const lvk::Buffer &uniform_buffer,
              const vk::raii::Framebuffer &framebuffer,
              const vk::raii::DescriptorSet &descriptor_set,
              const lvk::Pipeline &pipeline,

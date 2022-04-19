@@ -27,6 +27,8 @@ public:
     const vk::raii::PipelineLayout &GetPipelineLayout() const { return pipeline_layout_; }
     const vk::raii::DescriptorSetLayout &GetUniformBufferDescriptorSetLayout() const { return descriptor_set_layout_; }
 private:
+    std::vector<char> ReadShaderFile(std::string_view file_name);
+
     vk::raii::ShaderModule ConstructShaderModule(std::string_view file_name);
     vk::raii::DescriptorSetLayout ConstructDescriptorSetLayout();
     vk::raii::PipelineLayout ConstructPipelineLayout();

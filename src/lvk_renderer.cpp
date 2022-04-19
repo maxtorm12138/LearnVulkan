@@ -19,8 +19,8 @@ Renderer::Renderer(const lvk::Device &device) :
     swapchain_(new lvk::Swapchain(device_)),
     pipeline_(device_, swapchain_->GetRenderPass()),
     descriptor_sets_(device.AllocateDescriptorSets(MAX_FRAMES_IN_FLIGHT, pipeline_.GetUniformBufferDescriptorSetLayout())),
-    command_buffers_(device_.AllocateDrawCommandBuffers(MAX_FRAMES_IN_FLIGHT)),
-    uniform_buffers_(ConstructUniformBuffers())
+    command_buffers_(device_.AllocateDrawCommandBuffers(MAX_FRAMES_IN_FLIGHT))
+    // uniform_buffers_(ConstructUniformBuffers())
 {
     vk::SemaphoreCreateInfo semaphore_create_info{};
     vk::FenceCreateInfo fence_create_info{.flags = vk::FenceCreateFlagBits::eSignaled};
@@ -66,7 +66,7 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     // callback to record commands
     recorder(
         command_buffers_[current_frame_in_flight],
-        uniform_buffers_[current_frame_in_flight],
+        // uniform_buffers_[current_frame_in_flight],
         swapchain_->GetFrameBuffer(image_index), 
         descriptor_sets_[current_frame_in_flight],
         pipeline_,

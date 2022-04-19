@@ -11,23 +11,6 @@
 
 namespace lvk
 {
-namespace detail
-{
-std::vector<char> ReadShaderFile(std::string_view file_name)
-{
-    std::ifstream shader_file(file_name.data(), std::ios::ate | std::ios::binary);
-    if (!shader_file.is_open())
-    {
-        throw std::runtime_error(fmt::format("failed to open {}", file_name));
-    }
-
-    std::vector<char> buffer(shader_file.tellg());
-    shader_file.seekg(0);
-    shader_file.read(buffer.data(), buffer.size());
-    return buffer;
-}
-}// namespace detail
-
 
 Pipeline::Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render_pass) :
     device_(device),
@@ -52,7 +35,7 @@ Pipeline::Pipeline(Pipeline&& other) noexcept :
 
 vk::raii::ShaderModule Pipeline::ConstructShaderModule(std::string_view file_name)
 {
-    auto code = detail::ReadShaderFile(file_name);
+    auto code = ReadShaderFile(file_name);
     vk::ShaderModuleCreateInfo shader_module_create_info
     {
         .codeSize = code.size(),
@@ -87,12 +70,14 @@ vk::raii::DescriptorSetLayout Pipeline::ConstructDescriptorSetLayout()
 vk::raii::PipelineLayout Pipeline::ConstructPipelineLayout()
 {
 
-    vk::ArrayProxy<const vk::DescriptorSetLayout> layouts(*descriptor_set_layout_);
+    // vk::ArrayProxy<const vk::DescriptorSetLayout> layouts(*descriptor_set_layout_);
 
     vk::PipelineLayoutCreateInfo pipeline_layout_create_info
     {
-        .setLayoutCount = layouts.size(),
-        .pSetLayouts = layouts.data(),
+        // .setLayoutCount = layouts.size(),
+        // .pSetLayouts = layouts.data(),
+        .setLayoutCount = 0,
+        .pSetLayouts = nullptr,
         .pushConstantRangeCount = 0,
         .pPushConstantRanges = nullptr
     };
@@ -150,7 +135,7 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = vk::PolygonMode::eFill,
         .cullMode = vk::CullModeFlagBits::eBack,
-        .frontFace = vk::FrontFace::eCounterClockwise,
+        .frontFace = vk::FrontFace::eClockwise,
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,
         .depthBiasClamp = 0.0f,
@@ -219,6 +204,20 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
     };
 
     return vk::raii::Pipeline(device_.GetDevice(), {nullptr}, graphic_pipeline_create_info);
+}
+
+std::vector<char> Pipeline::ReadShaderFile(std::string_view file_name)
+{
+    std::ifstream shader_file(file_name.data(), std::ios::ate | std::ios::binary);
+    if (!shader_file.is_open())
+    {
+        throw std::runtime_error(fmt::format("failed to open {}", file_name));
+    }
+
+    std::vector<char> buffer(shader_file.tellg());
+    shader_file.seekg(0);
+    shader_file.read(buffer.data(), buffer.size());
+    return buffer;
 }
 
 void Pipeline::BindPipeline(const vk::raii::CommandBuffer &command_buffer) const
