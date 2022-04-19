@@ -12,10 +12,13 @@
 namespace lvk
 {
 
-Pipeline::Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render_pass) :
+Pipeline::Pipeline(const lvk::Device& device,
+         const lvk::Shader vertex_shader,
+         const lvk::Shader fragment_shader,
+         const vk::raii::RenderPass &render_pass) :
     device_(device),
-    vertex_shader_module_(ConstructShaderModule("shaders/triangle.vert.spv")),
-    fragment_shader_module_(ConstructShaderModule("shaders/triangle.frag.spv")),
+    vertex_shader_(vertex_shader),
+    fragment_shader_(fragment_shader),
     pipeline_layout_(ConstructPipelineLayout()),
     descriptor_set_layout_(ConstructDescriptorSetLayout()),
     pipeline_(ConstructPipeline(render_pass))
@@ -25,24 +28,12 @@ Pipeline::Pipeline(const lvk::Device& device, const vk::raii::RenderPass &render
 
 Pipeline::Pipeline(Pipeline&& other) noexcept :
     device_(other.device_),
-    vertex_shader_module_(std::move(other.vertex_shader_module_)),
-    fragment_shader_module_(std::move(other.fragment_shader_module_)),
+    vertex_shader_(other.vertex_shader_),
+    fragment_shader_(other.fragment_shader_),
     pipeline_layout_(std::move(other.pipeline_layout_)),
     descriptor_set_layout_(std::move(other.descriptor_set_layout_)),
     pipeline_(std::move(other.pipeline_))
 {
-}
-
-vk::raii::ShaderModule Pipeline::ConstructShaderModule(std::string_view file_name)
-{
-    auto code = ReadShaderFile(file_name);
-    vk::ShaderModuleCreateInfo shader_module_create_info
-    {
-        .codeSize = code.size(),
-        .pCode = reinterpret_cast<uint32_t *>(code.data())
-    };
-
-    return vk::raii::ShaderModule(device_.GetDevice(), shader_module_create_info);
 }
 
 vk::raii::DescriptorSetLayout Pipeline::ConstructDescriptorSetLayout()
@@ -82,7 +73,7 @@ vk::raii::PipelineLayout Pipeline::ConstructPipelineLayout()
         .pPushConstantRanges = nullptr
     };
 
-    return vk::raii::PipelineLayout(device_.GetDevice(), pipeline_layout_create_info);
+    return vk::raii::PipelineLayout(device_.get().GetDevice(), pipeline_layout_create_info);
 }
 
 
@@ -93,13 +84,13 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
         vk::PipelineShaderStageCreateInfo
         {
             .stage = vk::ShaderStageFlagBits::eVertex,
-            .module = *vertex_shader_module_,
+            .module = *vertex_shader_.get().GetShaderModule(),
             .pName = "main"
         },
         vk::PipelineShaderStageCreateInfo
         {
             .stage = vk::ShaderStageFlagBits::eFragment,
-            .module = *fragment_shader_module_,
+            .module = *fragment_shader_.get().GetShaderModule(),
             .pName = "main"
         }
     };
@@ -203,21 +194,7 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
         .basePipelineIndex = -1,
     };
 
-    return vk::raii::Pipeline(device_.GetDevice(), {nullptr}, graphic_pipeline_create_info);
-}
-
-std::vector<char> Pipeline::ReadShaderFile(std::string_view file_name)
-{
-    std::ifstream shader_file(file_name.data(), std::ios::ate | std::ios::binary);
-    if (!shader_file.is_open())
-    {
-        throw std::runtime_error(fmt::format("failed to open {}", file_name));
-    }
-
-    std::vector<char> buffer(shader_file.tellg());
-    shader_file.seekg(0);
-    shader_file.read(buffer.data(), buffer.size());
-    return buffer;
+    return vk::raii::Pipeline(device_.get().GetDevice(), {nullptr}, graphic_pipeline_create_info);
 }
 
 void Pipeline::BindPipeline(const vk::raii::CommandBuffer &command_buffer) const

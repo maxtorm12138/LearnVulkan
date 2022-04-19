@@ -14,7 +14,7 @@
 // vulkan
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 // SDL2
 #include <SDL2pp/SDL2pp.hh>
@@ -33,6 +33,7 @@ public:
     const vk::raii::SurfaceKHR &GetSurface() const { return surface_; }
     const SDL2pp::Window &GetWindow() const { return window_; }
     const VmaAllocator &GetAllocator() const { return allocator_; }
+
 public:
     std::vector<vk::PresentModeKHR> GetPresentModes() const { return physical_device_.getSurfacePresentModesKHR(*surface_.get()); }
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities() const { return physical_device_.getSurfaceCapabilitiesKHR(*surface_.get()); }

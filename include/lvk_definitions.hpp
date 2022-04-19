@@ -4,8 +4,13 @@
 // std
 #include <string_view>
 
+// boost
+#include <boost/log/trivial.hpp>
+
 namespace lvk
 {
+
+using boost::log::trivial::severity_level;
 
 constexpr auto MAX_FRAMES_IN_FLIGHT = 2;
 

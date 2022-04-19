@@ -45,11 +45,14 @@ function(target_add_shader TARGET SHADER)
     target_sources(${TARGET} PRIVATE ${CURRENT_OUTPUT_PATH})
 endfunction(target_add_shader TARGET SHADER)
 
-add_library(vma include/vk_mem_alloc.h src/vk_mem_alloc.cpp)
+add_library(vma include/vma/vk_mem_alloc.h src/vma/vk_mem_alloc.cpp)
 target_include_directories(vma PRIVATE include/ ${Vulkan_INCLUDE_DIRS})
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(vma PRIVATE -Wno-nullability-completeness)
 endif()
+
+add_library(stb include/stb/stb_image.h src/stb/stb_image.cpp)
+target_include_directories(stb PRIVATE include/)
 
 
 file(GLOB LVK_SRCS include/lvk_*.hpp src/lvk_*.cpp)
