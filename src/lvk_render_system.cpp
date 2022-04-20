@@ -18,6 +18,8 @@ void RenderSystem::RenderObjects(const vk::raii::CommandBuffer &command_buffer, 
     pipeline_.BindPipeline(command_buffer);
 
     for (auto &object : objects) {
+        auto &transform = object.GetTransform2D();
+        transform.offset.x += 0.0001f;
         command_buffer.pushConstants<Transfrom2D>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, object.GetTransform2D());
         object.GetModel()->BindVertexBuffers(command_buffer);
         object.GetModel()->Draw(command_buffer);

@@ -91,7 +91,7 @@ void EngineImplDeleter::operator()(EngineImpl *ptr)
 
 EngineImpl::EngineImpl() :
     sdl_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
-    window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN),
+    window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN),
     instance_(ConstructInstance()),
     surface_(ConstructSurface()),
     device_(instance_, surface_, window_),
@@ -318,7 +318,7 @@ void EngineImpl::DrawFrame(
     command_buffer.setScissor(0, scissors);
 
     // begin renderpass
-    vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.5f, 0.1f, 1.0f});
+    vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
     vk::ClearValue clear_value;
     clear_value.color = clear_color;
     vk::RenderPassBeginInfo render_pass_begin_info

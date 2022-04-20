@@ -18,7 +18,7 @@ struct MVPTransform
 
 struct Transfrom2D
 {
-    glm::mat3 transform{1.0f};
+    glm::vec2 offset;
 };
 
 class GameObject : public boost::noncopyable

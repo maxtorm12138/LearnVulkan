@@ -16,7 +16,6 @@ namespace lvk
 const std::unordered_set<std::string_view> REQUIRED_DEVICE_EXTENSION
 {
     EXT_NAME_VK_KHR_swapchain,
-    EXT_NAME_VK_KHR_shader_non_semantic_info
 };
 
 

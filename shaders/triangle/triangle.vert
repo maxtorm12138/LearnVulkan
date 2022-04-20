@@ -6,11 +6,11 @@ layout(location = 0) out vec3 frag_color;
 
 layout(push_constant) uniform Transform2D
 {
-    vec3 transform;
+    vec2 offset;
 } transform;
 
 void main()
 {
-    gl_Position = vec4(transform.transform * vec3(in_posision, 1.0), 1.0);
+    gl_Position = vec4(in_posision + transform.offset, 0.0, 1.0);
     frag_color = in_color;
 }
