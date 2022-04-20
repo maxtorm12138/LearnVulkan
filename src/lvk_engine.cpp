@@ -35,7 +35,7 @@ namespace detail
 {
 
 
-const vk::DebugUtilsMessageSeverityFlagsEXT ENABLE_MESSAGE_SEVERITY = /*vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |*/
+const vk::DebugUtilsMessageSeverityFlagsEXT ENABLE_MESSAGE_SEVERITY = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
                                                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
                                                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
                                                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
@@ -212,7 +212,7 @@ vk::raii::SurfaceKHR EngineImpl::ConstructSurface()
 
 VKAPI_ATTR VkBool32 VKAPI_CALL EngineImpl::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* data, void*)
 {
-    BOOST_LOG_TRIVIAL(info) << data->pMessage;
+    BOOST_LOG_TRIVIAL(debug) << data->pMessage;
     return VK_FALSE;
 }
 

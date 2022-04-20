@@ -16,11 +16,10 @@ RenderSystem::RenderSystem(const lvk::Device &device, const vk::raii::RenderPass
 void RenderSystem::RenderObjects(const vk::raii::CommandBuffer &command_buffer, std::vector<lvk::GameObject> &objects)
 {
     pipeline_.BindPipeline(command_buffer);
-
     for (auto &object : objects) {
         auto &transform = object.GetTransform2D();
-        transform.offset.x += 0.0001f;
-        command_buffer.pushConstants<Transfrom2D>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, object.GetTransform2D());
+        vk::ArrayProxy<Transfrom2D> vaules(transform);
+        command_buffer.pushConstants<Transfrom2D>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, vaules);
         object.GetModel()->BindVertexBuffers(command_buffer);
         object.GetModel()->Draw(command_buffer);
     }

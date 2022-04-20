@@ -29,7 +29,7 @@ function(target_add_shader TARGET SHADER)
 
     add_custom_command(
             OUTPUT ${CURRENT_OUTPUT_PATH}
-            COMMAND ${Vulkan_GLSLC_EXECUTABLE} -o ${CURRENT_OUTPUT_PATH} ${CURRENT_SHADER_PATH}
+            COMMAND ${Vulkan_GLSLC_EXECUTABLE} --target-env=vulkan1.1 -o ${CURRENT_OUTPUT_PATH} ${CURRENT_SHADER_PATH}
             DEPENDS ${CURRENT_SHADER_PATH}
             IMPLICIT_DEPENDS CXX ${CURRENT_SHADER_PATH}
             VERBATIM)
@@ -42,7 +42,7 @@ add_library(vma include/vma/vk_mem_alloc.h src/vma/vk_mem_alloc.cpp)
 target_include_directories(vma PRIVATE ${Vulkan_INCLUDE_DIRS} include/)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(vma PRIVATE -Wno-nullability-completeness)
-endif()
+endif ()
 
 add_library(stb include/stb/stb_image.h src/stb/stb_image.cpp)
 target_include_directories(stb PRIVATE include/)
@@ -52,7 +52,7 @@ add_library(lvk ${LVK_SRCS})
 target_compile_definitions(lvk PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVULKAN_HPP_NO_SPACESHIP_OPERATOR -DGLM_FORCE_RADIANS -DGLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_add_shader(lvk triangle/triangle.frag)
 target_add_shader(lvk triangle/triangle.vert)
-target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} ${SDL2PP_INCLUDE_DIRS} include/ )
+target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} ${SDL2PP_INCLUDE_DIRS} include/)
 target_link_libraries(lvk PRIVATE ${SDL2PP_LIBRARIES} vma stb Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
 
 add_executable(draw_triangle src/draw_triangle.cpp)

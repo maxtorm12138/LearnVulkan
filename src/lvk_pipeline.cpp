@@ -82,7 +82,7 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
         .depthClampEnable = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = vk::PolygonMode::eFill,
-        .cullMode = vk::CullModeFlagBits::eNone,
+        .cullMode = vk::CullModeFlagBits::eBack,
         .frontFace = vk::FrontFace::eClockwise,
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,
