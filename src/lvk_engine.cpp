@@ -35,7 +35,7 @@ namespace detail
 {
 
 
-const vk::DebugUtilsMessageSeverityFlagsEXT ENABLE_MESSAGE_SEVERITY = // vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+const vk::DebugUtilsMessageSeverityFlagsEXT ENABLE_MESSAGE_SEVERITY = /*vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |*/
                                                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
                                                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
                                                                       vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning;
@@ -318,7 +318,7 @@ void EngineImpl::DrawFrame(
     command_buffer.setScissor(0, scissors);
 
     // begin renderpass
-    vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
+    vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.5f, 0.1f, 1.0f});
     vk::ClearValue clear_value;
     clear_value.color = clear_color;
     vk::RenderPassBeginInfo render_pass_begin_info

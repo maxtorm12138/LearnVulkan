@@ -165,12 +165,24 @@ vk::raii::RenderPass Swapchain::ConstructRenderPass()
 
     vk::ArrayProxy<vk::SubpassDescription> subpass_descriptions(subpass_description);
 
+    vk::SubpassDependency subpass_dependency
+    {
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        .srcAccessMask = {},
+        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+    };
+
     vk::RenderPassCreateInfo render_pass_create_info
     {
         .attachmentCount = color_attachment_descriptions.size(),
         .pAttachments = color_attachment_descriptions.data(),
         .subpassCount = subpass_descriptions.size(),
-        .pSubpasses = subpass_descriptions.data()
+        .pSubpasses = subpass_descriptions.data(),
+        .dependencyCount = 1,
+        .pDependencies = &subpass_dependency
     };
 
     return vk::raii::RenderPass(device_.GetDevice(), render_pass_create_info);

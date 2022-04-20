@@ -20,7 +20,7 @@ public:
     RenderSystem(const lvk::Device &device, const vk::raii::RenderPass &render_pass);
     RenderSystem(RenderSystem &&other) noexcept;
 
-    void RenderObjects(const vk::raii::CommandBuffer &command_buffer, const std::vector<lvk::GameObject> &objects);
+    void RenderObjects(const vk::raii::CommandBuffer &command_buffer, std::vector<lvk::GameObject> &objects);
 
 private:
     vk::raii::PipelineLayout ConstructPipelineLayout();

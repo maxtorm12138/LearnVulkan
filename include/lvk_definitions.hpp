@@ -24,6 +24,8 @@ constexpr std::string_view LAYER_NAME_VK_LAYER_KHRONOS_validation = "VK_LAYER_KH
 
 constexpr std::string_view EXT_NAME_VK_KHR_swapchain = "VK_KHR_swapchain";
 
+constexpr std::string_view EXT_NAME_VK_KHR_shader_non_semantic_info = "VK_KHR_shader_non_semantic_info";
+
 #ifdef __GNUC__
 #define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
 #endif

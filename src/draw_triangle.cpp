@@ -12,7 +12,7 @@
 
 void init_log()
 {
-    boost::log::core::get()->set_filter(boost::log::trivial::severity > boost::log::trivial::debug);
+    boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
 }
 
 int main(int, char* argv[])
