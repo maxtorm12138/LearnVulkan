@@ -17,10 +17,7 @@ const std::unordered_set<vk::Result> WINDOW_RESIZE_ERRORS
 Renderer::Renderer(const lvk::Device &device) :
     device_(device),
     swapchain_(new lvk::Swapchain(device_)),
-    pipeline_(device_, swapchain_->GetRenderPass()),
-    descriptor_sets_(device.AllocateDescriptorSets(MAX_FRAMES_IN_FLIGHT, pipeline_.GetUniformBufferDescriptorSetLayout())),
     command_buffers_(device_.AllocateDrawCommandBuffers(MAX_FRAMES_IN_FLIGHT))
-    // uniform_buffers_(ConstructUniformBuffers())
 {
     vk::SemaphoreCreateInfo semaphore_create_info{};
     vk::FenceCreateInfo fence_create_info{.flags = vk::FenceCreateFlagBits::eSignaled};
@@ -66,10 +63,7 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     // callback to record commands
     recorder(
         command_buffers_[current_frame_in_flight],
-        // uniform_buffers_[current_frame_in_flight],
         swapchain_->GetFrameBuffer(image_index), 
-        descriptor_sets_[current_frame_in_flight],
-        pipeline_,
         *swapchain_);
 
 
@@ -116,41 +110,6 @@ void Renderer::ReCreateSwapchain()
     std::shared_ptr<lvk::Swapchain> old_swapchain(swapchain_.release());
     swapchain_ = std::make_unique<lvk::Swapchain>(device_, old_swapchain);
     window_event_flags_.window_resized_ = false;
-}
-
-std::vector<lvk::Buffer> Renderer::ConstructUniformBuffers()
-{
-    std::vector<lvk::Buffer> uniform_buffers;
-    uniform_buffers.reserve(MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) 
-    {
-        uniform_buffers.emplace_back(device_.GetAllocator(), vk::BufferCreateInfo{.size = sizeof(UniformBufferObject), .usage=vk::BufferUsageFlagBits::eUniformBuffer,.sharingMode = vk::SharingMode::eExclusive, }, VmaAllocationCreateInfo{.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
-
-        vk::DescriptorBufferInfo descriptor_buffer_info
-        {
-            .buffer = uniform_buffers[i],
-            .offset = 0,
-            .range = sizeof(UniformBufferObject)
-        };
-
-        std::array<vk::WriteDescriptorSet, 1> write_descriptor_sets
-        {
-            vk::WriteDescriptorSet
-            {
-                .dstSet = *descriptor_sets_[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eUniformBuffer,
-                .pImageInfo = nullptr,
-                .pBufferInfo = &descriptor_buffer_info,
-                .pTexelBufferView = nullptr
-            }
-        };
-
-        device_.GetDevice().updateDescriptorSets(write_descriptor_sets, {});
-    }
-    return uniform_buffers;
 }
 
 void Renderer::NotifyWindowEvent(SDL_Event *event)

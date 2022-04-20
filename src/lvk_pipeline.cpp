@@ -13,13 +13,14 @@ namespace lvk
 {
 
 Pipeline::Pipeline(const lvk::Device& device,
-         const lvk::Shader &vertex_shader,
-         const lvk::Shader &fragment_shader,
-         const vk::raii::RenderPass &render_pass) :
+                   const vk::raii::PipelineLayout &pipeline_layout,
+                   lvk::Shader vertex_shader,
+                   lvk::Shader fragment_shader,
+                   const vk::raii::RenderPass &render_pass) :
     device_(device),
-    vertex_shader_(vertex_shader),
-    fragment_shader_(fragment_shader),
-    pipeline_layout_(ConstructPipelineLayout()),
+    pipeline_layout_(pipeline_layout),
+    vertex_shader_(std::move(vertex_shader)),
+    fragment_shader_(std::move(fragment_shader)),
     pipeline_(ConstructPipeline(render_pass))
 {
 }
@@ -27,30 +28,11 @@ Pipeline::Pipeline(const lvk::Device& device,
 
 Pipeline::Pipeline(Pipeline&& other) noexcept :
     device_(other.device_),
-    vertex_shader_(other.vertex_shader_),
-    fragment_shader_(other.fragment_shader_),
-    pipeline_layout_(std::move(other.pipeline_layout_)),
+    pipeline_layout_(other.pipeline_layout_),
+    vertex_shader_(std::move(other.vertex_shader_)),
+    fragment_shader_(std::move(other.fragment_shader_)),
     pipeline_(std::move(other.pipeline_))
 {}
-
-vk::raii::PipelineLayout Pipeline::ConstructPipelineLayout()
-{
-
-    // vk::ArrayProxy<const vk::DescriptorSetLayout> layouts(*descriptor_set_layout_);
-
-    vk::PipelineLayoutCreateInfo pipeline_layout_create_info
-    {
-        // .setLayoutCount = layouts.size(),
-        // .pSetLayouts = layouts.data(),
-        .setLayoutCount = 0,
-        .pSetLayouts = nullptr,
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr
-    };
-
-    return vk::raii::PipelineLayout(device_.get().GetDevice(), pipeline_layout_create_info);
-}
-
 
 vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &render_pass)
 {
@@ -59,13 +41,13 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
         vk::PipelineShaderStageCreateInfo
         {
             .stage = vk::ShaderStageFlagBits::eVertex,
-            .module = *vertex_shader_.get().GetShaderModule(),
+            .module = *vertex_shader_.GetShaderModule(),
             .pName = "main"
         },
         vk::PipelineShaderStageCreateInfo
         {
             .stage = vk::ShaderStageFlagBits::eFragment,
-            .module = *fragment_shader_.get().GetShaderModule(),
+            .module = *fragment_shader_.GetShaderModule(),
             .pName = "main"
         }
     };
@@ -162,7 +144,7 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
         .pDepthStencilState = nullptr,
         .pColorBlendState = &color_blend_state_create_info,
         .pDynamicState = &dynamic_state_create_info,
-        .layout = *pipeline_layout_,
+        .layout = *pipeline_layout_.get(),
         .renderPass = *render_pass,
         .subpass = 0,
         .basePipelineHandle = nullptr,

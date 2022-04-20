@@ -26,7 +26,7 @@ struct MVP3D
 class GameObject : public boost::noncopyable
 {
 public:
-    GameObject(std::shared_ptr<lvk::Model> model, size_t id);
+    GameObject(size_t id, std::shared_ptr<lvk::Model> model);
     GameObject(GameObject &&other) noexcept;
 
     void SetColor(const glm::vec3 &color) { color_ = color; }
@@ -37,7 +37,7 @@ public:
     const MVP2D &GetTransform2D() const { return transform_2d_; }
     MVP2D &GetTransform2D() { return transform_2d_; }
 
-
+    const std::shared_ptr<lvk::Model> &GetModel() const { return model_; }
 private:
     size_t id_;
     std::shared_ptr<lvk::Model> model_;

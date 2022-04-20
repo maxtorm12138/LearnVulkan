@@ -45,10 +45,7 @@ public:
     
     using RecordCommandBufferCallback = std::function<
         void(const vk::raii::CommandBuffer &command_buffer,
-             // const lvk::Buffer &uniform_buffer,
              const vk::raii::Framebuffer &framebuffer,
-             const vk::raii::DescriptorSet &descriptor_set,
-             const lvk::Pipeline &pipeline,
              const lvk::Swapchain &swapchain)>;
     void DrawFrame(RecordCommandBufferCallback recorder);
 
@@ -68,9 +65,6 @@ private:
 
 private:
     std::unique_ptr<lvk::Swapchain> swapchain_;
-    lvk::Pipeline pipeline_;
-    std::vector<vk::raii::DescriptorSet> descriptor_sets_;
-    std::vector<lvk::Buffer> uniform_buffers_;
     std::vector<vk::raii::CommandBuffer> command_buffers_{};
     std::vector<vk::raii::Semaphore> image_available_semaphores_{};
     std::vector<vk::raii::Semaphore> render_finishend_semaphores_{};

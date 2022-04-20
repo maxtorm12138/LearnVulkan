@@ -20,8 +20,9 @@ class Pipeline : public boost::noncopyable
 {
 public:
     Pipeline(const lvk::Device& device,
-             const lvk::Shader &vertex_shader,
-             const lvk::Shader &fragment_shader,
+             const vk::raii::PipelineLayout &pipeline_layout,
+             lvk::Shader vertex_shader,
+             lvk::Shader fragment_shader,
              const vk::raii::RenderPass &render_pass);
 
     Pipeline(Pipeline&& other) noexcept;
@@ -32,14 +33,15 @@ public:
     const vk::raii::Pipeline &GetPipeline() const { return pipeline_; }
 
 private:
-    vk::raii::PipelineLayout ConstructPipelineLayout();
     vk::raii::Pipeline ConstructPipeline(const vk::raii::RenderPass &render_pass);
+
 private:
     std::reference_wrapper<const lvk::Device> device_;
-    std::reference_wrapper<const lvk::Shader> vertex_shader_;
-    std::reference_wrapper<const lvk::Shader> fragment_shader_;
+    std::reference_wrapper<const vk::raii::PipelineLayout> pipeline_layout_;
 
-    vk::raii::PipelineLayout pipeline_layout_;
+    lvk::Shader vertex_shader_;
+    lvk::Shader fragment_shader_;
+
     vk::raii::Pipeline pipeline_;
 };
 
