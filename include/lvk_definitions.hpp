@@ -32,5 +32,10 @@ constexpr std::string_view EXT_NAME_VK_KHR_swapchain = "VK_KHR_swapchain";
 #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
 #endif
 
+enum EngineEvent
+{
+    eWindowRename = 1,
+};
+
 }  // namespace lvk
 #endif

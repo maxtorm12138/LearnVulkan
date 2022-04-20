@@ -77,6 +77,7 @@ private:
     lvk::Renderer renderer_;
     std::vector<lvk::GameObject> game_objects_;
     lvk::RenderSystem render_system_;
+    uint32_t engine_event_;
 
     vk::raii::DebugUtilsMessengerEXT debug_messenger_;
     
@@ -96,6 +97,7 @@ EngineImpl::EngineImpl() :
     device_(instance_, surface_, window_),
     renderer_(device_),
     render_system_(device_, renderer_.GetRenderPass()),
+    engine_event_(SDL_RegisterEvents(1)),
     #ifndef NDEBUG
     debug_messenger_(instance_, vk::DebugUtilsMessengerCreateInfoEXT{
             .messageSeverity = ENABLE_MESSAGE_SEVERITY,
@@ -216,6 +218,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL EngineImpl::DebugCallback(VkDebugUtilsMessageSeve
 
 void EngineImpl::Run()
 {
+
     LoadGameObjects();
     window_.Show();
 
@@ -231,6 +234,14 @@ void EngineImpl::Run()
         else if(event.type == SDL_WINDOWEVENT)
         {
             renderer_.NotifyWindowEvent(&event);
+        }
+        else if (event.type == engine_event_)
+        {
+            if (event.user.code == EngineEvent::eWindowRename) 
+            {
+                window_.SetTitle(*static_cast<std::string *>(event.user.data1));
+                delete static_cast<std::string *>(event.user.data1);
+            }
         }
     }
     render_thread.join();
@@ -252,8 +263,7 @@ void EngineImpl::LoadGameObjects()
     };
 
 
-    auto model = std::make_shared<lvk::Model>(device_, rectangle_vertices, rectangle_indices);
-    game_objects_.emplace_back(MakeGameObject(model));
+    game_objects_.emplace_back(MakeGameObject(std::make_shared<lvk::Model>(device_, rectangle_vertices, rectangle_indices)));
 }
 
 void EngineImpl::RunRender()
@@ -271,10 +281,13 @@ void EngineImpl::DrawFrame(
     const vk::raii::Framebuffer &framebuffer,
     const lvk::Swapchain &swapchain)
 {
+    static auto begin_frame_time = std::chrono::high_resolution_clock::now();
     static auto last_frame_time = std::chrono::high_resolution_clock::now();
-    auto current_frame_time =  std::chrono::high_resolution_clock::now();
 
-    float frame_time = std::chrono::duration<float, std::chrono::seconds::period>(current_frame_time - last_frame_time).count();
+    auto current_frame_time =  std::chrono::high_resolution_clock::now();
+    float render_time = std::chrono::duration<float, std::chrono::milliseconds::period>(current_frame_time - begin_frame_time).count();
+    float frame_time = std::chrono::duration<float, std::chrono::milliseconds::period>(current_frame_time - last_frame_time).count();
+    last_frame_time = current_frame_time;
 
     command_buffer.reset();
     command_buffer.begin({});

@@ -24,12 +24,5 @@ struct Vertex
     static const std::vector<vk::VertexInputAttributeDescription> &GetVertexInputAttributeDescriptions();
 };
 
-struct Transform
-{
-    glm::mat4 model{1.f};
-    glm::mat4 view;
-    glm::mat4 projection;
-};
-
 }
 #endif
