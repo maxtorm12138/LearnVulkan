@@ -16,7 +16,7 @@ class GameObject : public boost::noncopyable
 public:
     struct Transform
     {
-        glm::vec3 translation{0.f, 0.f, 0.f};
+        glm::vec3 translation{0.f, 0.f, 0.5f};
         glm::vec3 scale{1.f, 1.f, 1.f};
         glm::vec3 rotation{0.f, 0.f, 0.f};
         glm::mat4 ModelMatrix();
