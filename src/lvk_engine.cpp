@@ -292,19 +292,16 @@ void EngineImpl::LoadGameObjects()
     {
         // near
         0, 1, 2, 2, 3, 0,
-        // left
-        16, 17, 18, 18, 19, 16,
-        // top
-        8, 9, 10, 10, 11, 8,
-
-        /*
         // far
         4, 5, 6, 6, 7, 5,
+        // top
+        8, 9, 10, 10, 11, 8,
         //bottom
         12, 13, 14, 14, 15, 12,
+        // left
+        16, 17, 18, 18, 19, 16,
         // right
         20, 21, 22, 22, 23, 20
-        */
     };
 
     game_objects_.emplace_back(MakeGameObject(std::make_shared<lvk::Model>(device_, cube_vertex, cube_indices)));
