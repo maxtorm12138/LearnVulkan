@@ -249,21 +249,65 @@ void EngineImpl::Run()
 
 void EngineImpl::LoadGameObjects()
 {
-    const std::vector<Vertex> rectangle_vertices = 
+    std::vector<Vertex> cube_vertex
     {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+        // near 0 ~ 3
+        {{-0.5f, -0.5f, 0.5f}, {1.f, 0.f, 0.f}}, 
+        {{0.5f, -0.5f, 0.5f}, {1.f, 0.f, 0.f}}, 
+        {{0.5f, 0.5f, 0.5f}, {1.f, 0.f, 0.f}}, 
+        {{-0.5f, 0.5f, 0.5f}, {1.f, 0.f, 0.f}},
+
+        // far 4 ~ 7
+        {{-0.5f, -0.5f, 0.0f}, {0.f, 1.f, 0.f}}, 
+        {{-0.5f, 0.5f, 0.0f}, {0.f, 1.f, 0.f}},
+        {{0.5f, 0.5f, 0.0f}, {0.f, 1.f, 0.f}}, 
+        {{0.5f, -0.5f, 0.0f}, {0.f, 1.f, 0.f}}, 
+
+        // top 8 ~ 11
+        {{-0.5f, -0.5f, 0.5f}, {0.5f, 1.f, 0.3f}}, 
+        {{-0.5f, -0.5f, 0.0f}, {0.5f, 1.f, 0.3f}}, 
+        {{0.5f, -0.5f, 0.0f}, {0.5f, 1.f, 0.3f}}, 
+        {{0.5f, -0.5f, 0.5f}, {0.5f, 1.f, 0.3f}},
+
+        // bottom 12 ~ 15
+        {{-0.5f, 0.5f, 0.5f}, {0.f, 1.f, 1.f}}, 
+        {{0.5f, 0.5f, 0.5f}, {0.f, 1.f, 1.f}},
+        {{0.5f, 0.5f, 0.0f}, {0.f, 1.f, 1.f}},
+        {{-0.5f, 0.5f, 0.0f}, {0.f, 1.f, 1.f}}, 
+
+        // left 16 ~ 19
+        {{-0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.f}}, 
+        {{-0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, 0.f}}, 
+        {{-0.5f, 0.5f, 0.0f}, {0.5f, 0.5f, 0.f}}, 
+        {{-0.5f, -0.5f, 0.0f}, {0.5f, 0.5f, 0.f}}, 
+        
+        //right 20 ~ 23
+        {{0.5f, -0.5f, 0.5f}, {0.f, 0.5f, 0.5f}}, 
+        {{0.5f, -0.5f, 0.0f}, {0.f, 0.5f, 0.5f}}, 
+        {{0.5f, 0.5f, 0.0f}, {0.f, 0.5f, 0.5f}}, 
+        {{0.5f, 0.5f, 0.5f}, {0.f, 0.5f, 0.5f}}, 
     };
 
-    const std::vector<uint32_t> rectangle_indices =
+    std::vector<uint32_t> cube_indices
     {
-        0, 1, 2, 2, 3, 0
+        // near
+        0, 1, 2, 2, 3, 0,
+        // left
+        16, 17, 18, 18, 19, 16,
+        // top
+        8, 9, 10, 10, 11, 8,
+
+        /*
+        // far
+        4, 5, 6, 6, 7, 5,
+        //bottom
+        12, 13, 14, 14, 15, 12,
+        // right
+        20, 21, 22, 22, 23, 20
+        */
     };
 
-
-    game_objects_.emplace_back(MakeGameObject(std::make_shared<lvk::Model>(device_, rectangle_vertices, rectangle_indices)));
+    game_objects_.emplace_back(MakeGameObject(std::make_shared<lvk::Model>(device_, cube_vertex, cube_indices)));
 }
 
 void EngineImpl::RunRender()

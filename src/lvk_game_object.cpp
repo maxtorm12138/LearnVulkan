@@ -10,8 +10,7 @@ GameObject::GameObject(size_t id, std::shared_ptr<lvk::Model> model) :
 GameObject::GameObject(GameObject &&other) noexcept :
   id_(other.id_),
   model_(std::move(other.model_)),
-  color_(other.color_),
-  transform_2d_(other.transform_2d_)
+  transform_(other.transform_)
 {
 }
 

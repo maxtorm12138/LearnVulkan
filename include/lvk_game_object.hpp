@@ -6,46 +6,39 @@
 
 // GLM
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
 namespace lvk
 {
 
-struct MVPTransform
-{
-    glm::mat4 model{1.0f};
-    glm::mat4 view{1.0f};
-    glm::mat4 projection{1.0f};
-};
-
-struct Transfrom2D
-{
-    alignas(16) glm::mat4 transform{1.0f};
-};
 
 class GameObject : public boost::noncopyable
 {
 public:
+    struct Transform
+    {
+        glm::vec3 translation{0.f, 0.f, 0.f};
+        glm::vec3 scale{1.f, 1.f, 1.f};
+        glm::vec3 rotation{0.f, 0.f, 0.f};
+        glm::mat4 ModelMatrix() 
+        {
+            glm::mat4 model{1.f};
+            model = glm::rotate(model, rotation.y, glm::vec3{0, 1, 0});
+            model = glm::rotate(model, rotation.x, glm::vec3{1, 0, 0});
+            model = glm::rotate(model, rotation.z, glm::vec3{0, 0, 1});
+            model = glm::scale(model, scale);
+            return model;
+        }
+    };
+
     GameObject(size_t id, std::shared_ptr<lvk::Model> model);
     GameObject(GameObject &&other) noexcept;
 
-    void SetColor(const glm::vec3 &color) { color_ = color; }
-    const glm::vec3 &GetColor() const { return color_; }
-    glm::vec3 &GetColor() { return color_; }
-    
-    /*
-    void SetTransform2D(const MVP2D &transform_2d) { transform_2d_ = transform_2d; }
-    const MVP2D &GetTransform2D() const { return transform_2d_; }
-    MVP2D &GetTransform2D() { return transform_2d_; }
-    */
-    void SetTransform2D(const Transfrom2D &transform_2d) { transform_2d_ = transform_2d; }
-    const Transfrom2D &GetTransform2D() const { return transform_2d_; }
-    Transfrom2D &GetTransform2D() { return transform_2d_; }
-
     const std::shared_ptr<lvk::Model> &GetModel() const { return model_; }
+    Transform &GetTransform() { return transform_; }
 private:
     size_t id_;
     std::shared_ptr<lvk::Model> model_;
-    glm::vec3 color_;
-    Transfrom2D transform_2d_;
+    Transform transform_;
 };
 
 GameObject MakeGameObject(std::shared_ptr<lvk::Model> model);

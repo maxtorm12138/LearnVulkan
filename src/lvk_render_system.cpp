@@ -1,4 +1,6 @@
 #include "lvk_render_system.hpp"
+#include <glm/ext.hpp>
+
 namespace lvk
 {
 
@@ -17,9 +19,17 @@ void RenderSystem::RenderObjects(const vk::raii::CommandBuffer &command_buffer, 
 {
     pipeline_.BindPipeline(command_buffer);
     for (auto &object : objects) {
-        auto &transform = object.GetTransform2D();
-        vk::ArrayProxy<Transfrom2D> vaules(transform);
-        command_buffer.pushConstants<Transfrom2D>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, vaules);
+        auto &transform = object.GetTransform();
+        transform.scale = {0.5f, 0.5f, 0.5f};
+        transform.rotation.y = glm::radians(30.f);
+        transform.rotation.x = glm::radians(-30.f);
+        MVP mvp
+        {
+            .model = object.GetTransform().ModelMatrix(),
+            .view = glm::mat4(1.f),
+            .projection = glm::mat4(1.f)
+        };
+        command_buffer.pushConstants<MVP>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, mvp);
         object.GetModel()->BindVertexBuffers(command_buffer);
         object.GetModel()->Draw(command_buffer);
     }
@@ -31,7 +41,7 @@ vk::raii::PipelineLayout RenderSystem::ConstructPipelineLayout()
     {
         .stageFlags = vk::ShaderStageFlagBits::eVertex,
         .offset = 0,
-        .size = sizeof(Transfrom2D),
+        .size = sizeof(MVP),
     };
 
     vk::PipelineLayoutCreateInfo pipeline_layout_create_info
