@@ -13,6 +13,7 @@ find_package(glm REQUIRED FATAL_ERROR)
 
 # include vulkan
 find_package(Vulkan REQUIRED FATAL_ERROR)
+message("Vulkan: ${Vulkan_INCLUDE_DIRS}")
 
 # include boost
 find_package(Boost REQUIRED COMPONENTS log)
