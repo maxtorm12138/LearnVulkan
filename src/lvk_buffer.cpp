@@ -1,5 +1,8 @@
 #include "lvk_buffer.hpp"
 
+// module
+#include "lvk_allocator.hpp"
+
 // fmt
 #include <fmt/format.h>
 

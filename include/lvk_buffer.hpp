@@ -1,9 +1,6 @@
 #ifndef _LVK_BUFFER_H
 #define _LVK_BUFFER_H
 
-// module
-#include "lvk_allocator.hpp"
-
 // boost
 #include <boost/noncopyable.hpp>
 
@@ -13,6 +10,7 @@
 
 namespace lvk
 {
+class Allocator;
 class Buffer : public boost::noncopyable    
 {
 public:
