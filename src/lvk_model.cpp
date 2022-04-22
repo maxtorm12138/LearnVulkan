@@ -76,7 +76,7 @@ void Model::CopyBuffer(const lvk::Buffer &stage_buffer, const lvk::Buffer &dest_
     };
 
     vk::ArrayProxy<const vk::BufferCopy> regions(region);
-    command_buffer.copyBuffer(*stage_buffer, *dest_buffer, regions);
+    command_buffer.copyBuffer(stage_buffer, dest_buffer, regions);
     command_buffer.end();
     
     vk::ArrayProxy<const vk::CommandBuffer> submit_buffers(*command_buffer);
@@ -106,7 +106,7 @@ void Model::Draw(const vk::raii::CommandBuffer &command_buffer)
 void Model::BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer)
 {
     uint64_t offset = 0;
-    vk::ArrayProxy<const vk::Buffer> buffers(*buffer_);
+    vk::ArrayProxy<const vk::Buffer> buffers(buffer_);
     vk::ArrayProxy<vk::DeviceSize> offsets(offset);
     command_buffer.bindVertexBuffers(0, buffers, offsets);
 

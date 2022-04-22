@@ -10,8 +10,8 @@ RenderSystem::RenderSystem(const lvk::Device &device, const vk::raii::RenderPass
     pipeline_(
         device_,
         pipeline_layout_,
-        lvk::Shader(device_, "shaders/triangle/triangle.vert.spv", vk::ShaderStageFlagBits::eVertex),
-        lvk::Shader(device_, "shaders/triangle/triangle.frag.spv", vk::ShaderStageFlagBits::eFragment),
+        lvk::Shader(device_, "naive","shaders/naive/naive.vert.spv", vk::ShaderStageFlagBits::eVertex),
+        lvk::Shader(device_, "naive","shaders/naive/naive.frag.spv", vk::ShaderStageFlagBits::eFragment),
         render_pass)
 {}
 

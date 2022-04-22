@@ -10,10 +10,15 @@
 
 namespace lvk
 {
-Shader::Shader(const lvk::Device &device, std::string_view shader_file_name, vk::ShaderStageFlagBits shader_stage) :
+Shader::Shader(
+    const lvk::Device &device,
+    std::string_view shader_name,
+    std::string_view shader_path,
+    vk::ShaderStageFlagBits shader_stage) :
     device_(device),
+    shader_name_(shader_name),
     shader_stage_(shader_stage),
-    shader_module_(ConstructShaderModule(shader_file_name))
+    shader_module_(ConstructShaderModule(shader_path))
 {}
 
 Shader::Shader(Shader &&other) noexcept :

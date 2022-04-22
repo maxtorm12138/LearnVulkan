@@ -1,5 +1,4 @@
 #version 460
-#extension GL_EXT_debug_printf : enable
 
 layout(location = 0) in vec3 in_posision;
 layout(location = 1) in vec3 in_color;
