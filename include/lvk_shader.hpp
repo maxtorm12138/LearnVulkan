@@ -17,7 +17,12 @@ namespace lvk
 class Shader : public boost::noncopyable
 {
 public:
-    Shader(const lvk::Device &device, const std::string_view shader_file_name, vk::ShaderStageFlagBits shader_stage);
+    Shader(
+        const lvk::Device &device,
+        std::string_view shader_name,
+        std::string_view shader_path,
+        vk::ShaderStageFlagBits shader_stage);
+
     Shader(Shader &&other) noexcept;
 
     vk::ShaderStageFlagBits GetShaderStage() const { return shader_stage_; }
@@ -29,6 +34,7 @@ private:
 
 private:
     std::reference_wrapper<const lvk::Device> device_;
+    std::string shader_name_;
     vk::ShaderStageFlagBits shader_stage_;
     vk::raii::ShaderModule shader_module_;
 };

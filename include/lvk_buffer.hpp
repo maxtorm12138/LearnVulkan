@@ -16,24 +16,21 @@ namespace lvk
 class Buffer : public boost::noncopyable    
 {
 public:
-    Buffer(const lvk::Device &device, vk::BufferCreateInfo create_info, VmaAllocationCreateInfo alloc_info);
+    Buffer(const lvk::Device &device, vk::BufferCreateInfo create_info, VmaAllocationCreateInfo alloc_info = {.usage = VMA_MEMORY_USAGE_AUTO});
     Buffer(Buffer &&other) noexcept;
     Buffer &operator=(Buffer &&other) noexcept;
 
     ~Buffer();
 
-    vk::Buffer *operator->() { return &buffer_; }
-    const vk::Buffer *operator->() const { return &buffer_; }
-
-    vk::Buffer &operator*() { return buffer_; }
-    const vk::Buffer &operator*() const { return buffer_; }
-
     void *MapMemory() const;
     void UnmapMemory() const;
 
-    operator vk::Buffer() { return buffer_; }
+    operator vk::Buffer &() { return buffer_; }
+    operator const vk::Buffer &() const { return buffer_; }
+
 private:
     std::reference_wrapper<const lvk::Device> device_;
+
 private:
     VmaAllocation allocation_{VK_NULL_HANDLE};
     VmaAllocationInfo allocation_info_;
