@@ -38,7 +38,7 @@ public:
     std::vector<vk::PresentModeKHR> GetPresentModes() const { return physical_device_.getSurfacePresentModesKHR(*surface_.get()); }
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities() const { return physical_device_.getSurfaceCapabilitiesKHR(*surface_.get()); }
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats() const { return physical_device_.getSurfaceFormatsKHR(*surface_.get()); }
-    vk::PhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProperties() const { return physical_device_.getMemoryProperties(); }
+
     const vk::raii::Device &GetDevice() const { return device_; }
     const vk::raii::PhysicalDevice &GetPhysicalDevice() const { return physical_device_; }
     const vk::raii::Queue &GetQueue() const { return queue_; }
