@@ -16,7 +16,7 @@ namespace lvk
 class Buffer : public boost::noncopyable    
 {
 public:
-    Buffer(const lvk::Device &device, vk::BufferCreateInfo create_info, VmaAllocationCreateInfo alloc_info = {.usage = VMA_MEMORY_USAGE_AUTO});
+    Buffer(const lvk::Device &device, vk::BufferCreateInfo create_info, VmaAllocationCreateInfo alloc_info);
     Buffer(Buffer &&other) noexcept;
     Buffer &operator=(Buffer &&other) noexcept;
 
