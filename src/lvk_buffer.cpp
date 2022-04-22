@@ -6,11 +6,11 @@
 namespace lvk
 {
 
-Buffer::Buffer(const lvk::Device &device, vk::BufferCreateInfo create_info, VmaAllocationCreateInfo alloc_info) :
-    device_(device)
+Buffer::Buffer(const lvk::Allocator &allocator, vk::BufferCreateInfo create_info, VmaAllocationCreateInfo alloc_info) :
+    allocator_(allocator)
 {
     VkBuffer buffer;
-    auto result = vmaCreateBuffer(device_.get().GetAllocator(), reinterpret_cast<vk::BufferCreateInfo::NativeType *>(&create_info), &alloc_info, &buffer, &allocation_, &allocation_info_);
+    auto result = vmaCreateBuffer(allocator_.get(), reinterpret_cast<vk::BufferCreateInfo::NativeType *>(&create_info), &alloc_info, &buffer, &allocation_, &allocation_info_);
     if (result != VK_SUCCESS) 
     {
         throw std::runtime_error(fmt::format("vmaCreateBuffer fail result: {}", result));
@@ -19,7 +19,7 @@ Buffer::Buffer(const lvk::Device &device, vk::BufferCreateInfo create_info, VmaA
 }
 
 Buffer::Buffer(Buffer &&other) noexcept :
-    device_(other.device_)
+    allocator_(other.allocator_)
 {
     std::swap(this->buffer_, other.buffer_);
     std::swap(this->allocation_, other.allocation_);
@@ -28,7 +28,7 @@ Buffer::Buffer(Buffer &&other) noexcept :
 
 Buffer &Buffer::operator=(Buffer &&other) noexcept
 {
-    this->device_ = other.device_;
+    allocator_ = other.allocator_;
     std::swap(this->buffer_, other.buffer_);
     std::swap(this->allocation_, other.allocation_);
     std::swap(this->allocation_info_, other.allocation_info_);
@@ -40,14 +40,14 @@ Buffer::~Buffer()
     // vmaDestroyBuffer isn't null safe
     if (allocation_ != VK_NULL_HANDLE)
     {
-        vmaDestroyBuffer(device_.get().GetAllocator(), buffer_, allocation_);
+        vmaDestroyBuffer(allocator_.get(), buffer_, allocation_);
     }
 }
 
 void *Buffer::MapMemory() const
 {
     void *data;
-    auto result = vmaMapMemory(device_.get().GetAllocator(), allocation_, &data);
+    auto result = vmaMapMemory(allocator_.get(), allocation_, &data);
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error(fmt::format("vmaMapMemory fail result: {}", result));
@@ -57,7 +57,7 @@ void *Buffer::MapMemory() const
 
 void Buffer::UnmapMemory() const
 {
-    vmaUnmapMemory(device_.get().GetAllocator(), allocation_);
+    vmaUnmapMemory(allocator_.get(), allocation_);
 }
 
 }

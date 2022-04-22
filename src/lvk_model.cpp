@@ -11,12 +11,12 @@ Model::Model(const lvk::Device& device, const std::vector<Vertex> &vertices) :
     vertex_count_(vertices.size()),
     vertex_size_(vertices.size() * sizeof(Vertex)),
     buffer_(
-        device_,
+        device_.get().GetAllocator(),
         {.size = vertex_count_ * sizeof(Vertex), .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, .sharingMode = vk::SharingMode::eExclusive},
         {.usage =  VMA_MEMORY_USAGE_AUTO,})
 {
     lvk::Buffer stage_buffer(
-        device_,
+        device_.get().GetAllocator(),
         {.size = vertex_size_, .usage = vk::BufferUsageFlagBits::eTransferSrc,.sharingMode = vk::SharingMode::eExclusive},
         {.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
 
@@ -34,12 +34,12 @@ Model::Model(const lvk::Device& device, const std::vector<Vertex> &vertices, con
     index_count_(indices.size()),
     index_size_(indices.size() * sizeof(uint32_t)),
     buffer_(
-        device_,
+        device_.get().GetAllocator(),
         {.size = vertex_count_ * sizeof(Vertex) + index_count_ * sizeof(uint32_t), .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst, .sharingMode = vk::SharingMode::eExclusive},
         {.usage =  VMA_MEMORY_USAGE_AUTO,})
 {
     lvk::Buffer stage_buffer(
-        device_,
+        device_.get().GetAllocator(),
         {.size = vertex_size_ + index_size_,.usage = vk::BufferUsageFlagBits::eTransferSrc,.sharingMode = vk::SharingMode::eExclusive},
         {.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
 

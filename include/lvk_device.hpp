@@ -3,6 +3,7 @@
 
 // module
 #include "lvk_definitions.hpp"
+#include "lvk_allocator.hpp"
 
 // boost
 #include <boost/noncopyable.hpp>
@@ -32,7 +33,7 @@ public:
     const vk::raii::Instance &GetInstance() const { return instance_; }
     const vk::raii::SurfaceKHR &GetSurface() const { return surface_; }
     const SDL2pp::Window &GetWindow() const { return window_; }
-    const VmaAllocator &GetAllocator() const { return allocator_; }
+    const lvk::Allocator &GetAllocator() const { return allocator_; }
 
 public:
     std::vector<vk::PresentModeKHR> GetPresentModes() const { return physical_device_.getSurfacePresentModesKHR(*surface_.get()); }
@@ -66,7 +67,7 @@ private:
     vk::raii::CommandPool draw_command_pool_;
     vk::raii::CommandPool copy_command_pool_;
     vk::raii::DescriptorPool descriptor_pool_;
-    VmaAllocator allocator_;
+    lvk::Allocator allocator_;
 };
 }  // namespace lvk
 

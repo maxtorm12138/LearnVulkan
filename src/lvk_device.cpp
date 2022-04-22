@@ -34,22 +34,9 @@ Device::Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &s
     queue_(device_.getQueue(queue_index_, 0)),
     draw_command_pool_(device_, {.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,.queueFamilyIndex = queue_index_}),
     copy_command_pool_(device_, {.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,.queueFamilyIndex = queue_index_}),
-    descriptor_pool_(ConstructDescriptorPool())
+    descriptor_pool_(ConstructDescriptorPool()),
+    allocator_({ .physicalDevice = *physical_device_, .device = *device_, .instance = *instance_.get(), .vulkanApiVersion = VK_API_VERSION_1_1 })
 {
-
-    VmaAllocatorCreateInfo allocator_create_info
-    {
-        .physicalDevice = *physical_device_,
-        .device = *device_,
-        .instance = *instance_.get(),
-        .vulkanApiVersion = VK_API_VERSION_1_1
-    };
-
-    auto result = vmaCreateAllocator(&allocator_create_info, &allocator_);
-    if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error(fmt::format("vmaCreateAllocator fail result: {}", result));
-    }
 }
 
 Device::Device(Device &&other) noexcept :
@@ -62,17 +49,13 @@ Device::Device(Device &&other) noexcept :
     queue_(std::move(other.queue_)),
     draw_command_pool_(std::move(other.draw_command_pool_)),
     copy_command_pool_(std::move(other.copy_command_pool_)),
-    descriptor_pool_(std::move(other.descriptor_pool_))
+    descriptor_pool_(std::move(other.descriptor_pool_)),
+    allocator_(std::move(other.allocator_))
 {
-    std::swap(this->allocator_, other.allocator_);
 }
 
 Device::~Device()
 {
-    if (allocator_ != VK_NULL_HANDLE)
-    {
-        vmaDestroyAllocator(allocator_);
-    }
 }
 
 vk::raii::PhysicalDevice Device::PickPhysicalDevice() const
