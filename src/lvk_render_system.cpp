@@ -21,8 +21,8 @@ void RenderSystem::RenderObjects(const vk::raii::CommandBuffer &command_buffer, 
     for (auto &object : objects) {
         auto &transform = object.GetTransform();
         transform.scale = {0.5f, 0.5f, 0.5f};
-        transform.rotation.y = glm::mod(transform.rotation.y + glm::radians(0.1f), glm::two_pi<float>());
-        transform.rotation.x = glm::mod(transform.rotation.x + glm::radians(0.1f), glm::two_pi<float>());
+        transform.rotation.y = glm::mod(transform.rotation.y + glm::radians(-0.1f), glm::two_pi<float>());
+        transform.rotation.x = glm::mod(transform.rotation.x + glm::radians(-0.1f), glm::two_pi<float>());
         MVP mvp
         {
             .model = object.GetTransform().ModelMatrix(),

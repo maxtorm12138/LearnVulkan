@@ -1,6 +1,9 @@
 #ifndef _LVK_BUFFER_H
 #define _LVK_BUFFER_H
 
+// module
+#include <lvk_device.hpp>
+
 // boost
 #include <boost/noncopyable.hpp>
 
@@ -13,7 +16,7 @@ namespace lvk
 class Buffer : public boost::noncopyable    
 {
 public:
-    Buffer(const VmaAllocator &allocator, vk::BufferCreateInfo create_info, VmaAllocationCreateInfo alloc_info);
+    Buffer(const lvk::Device &device, vk::BufferCreateInfo create_info, VmaAllocationCreateInfo alloc_info);
     Buffer(Buffer &&other) noexcept;
     Buffer &operator=(Buffer &&other) noexcept;
 
@@ -30,7 +33,8 @@ public:
 
     operator vk::Buffer() { return buffer_; }
 private:
-    std::reference_wrapper<const VmaAllocator> allocator_;
+    std::reference_wrapper<const lvk::Device> device_;
+private:
     VmaAllocation allocation_{VK_NULL_HANDLE};
     VmaAllocationInfo allocation_info_;
     vk::Buffer buffer_;
