@@ -6,6 +6,7 @@
 
 // sdl2
 #include <SDL_vulkan.h>
+#include <SDL2pp/Window.hh>
 
 // fmtlib
 #include <fmt/format.h>

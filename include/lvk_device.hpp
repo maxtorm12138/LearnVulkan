@@ -8,18 +8,16 @@
 // boost
 #include <boost/noncopyable.hpp>
 
-// std
-#include <memory>
-#include <optional>
-
 // vulkan
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 #include <vma/vk_mem_alloc.h>
 
-// SDL2
-#include <SDL2pp/SDL2pp.hh>
 
+namespace SDL2pp
+{
+class Window;
+}
 
 namespace lvk
 {
