@@ -27,6 +27,7 @@ public:
 
     const std::shared_ptr<lvk::Model> &GetModel() const { return model_; }
     Transform &GetTransform() { return transform_; }
+    const Transform &GetTransform() const { return transform_; }
 private:
     size_t id_;
     std::shared_ptr<lvk::Model> model_;

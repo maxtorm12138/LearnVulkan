@@ -49,7 +49,6 @@ class EngineImpl
 {
 public:
     EngineImpl();
-    ~EngineImpl();
     void Run();
 
 private:
@@ -107,10 +106,6 @@ EngineImpl::EngineImpl() :
     #else
     debug_messenger_(nullptr)
     #endif
-{
-}
-
-EngineImpl::~EngineImpl()
 {
 }
 
@@ -270,10 +265,10 @@ void EngineImpl::LoadGameObjects()
         {{0.5f, -0.5f, 0.5f}, {0.5f, 1.f, 0.3f}},
 
         // bottom 12 ~ 15
-        {{-0.5f, 0.5f, 0.5f}, {0.f, 1.f, 1.f}}, 
-        {{0.5f, 0.5f, 0.5f}, {0.f, 1.f, 1.f}},
-        {{0.5f, 0.5f, -0.5f}, {0.f, 1.f, 1.f}},
-        {{-0.5f, 0.5f, -0.5f}, {0.f, 1.f, 1.f}}, 
+        {{-0.5f, 0.5f, 0.5f}, {0.3f, 1.f, 1.f}}, 
+        {{0.5f, 0.5f, 0.5f}, {0.3f, 1.f, 1.f}},
+        {{0.5f, 0.5f, -0.5f}, {0.3f, 1.f, 1.f}},
+        {{-0.5f, 0.5f, -0.5f}, {0.3f, 1.f, 1.f}}, 
 
         // left 16 ~ 19
         {{-0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.f}}, 
@@ -322,14 +317,6 @@ void EngineImpl::DrawFrame(
     const vk::raii::Framebuffer &framebuffer,
     const lvk::Swapchain &swapchain)
 {
-    static auto begin_frame_time = std::chrono::high_resolution_clock::now();
-    static auto last_frame_time = std::chrono::high_resolution_clock::now();
-
-    auto current_frame_time =  std::chrono::high_resolution_clock::now();
-    float render_time = std::chrono::duration<float, std::chrono::milliseconds::period>(current_frame_time - begin_frame_time).count();
-    float frame_time = std::chrono::duration<float, std::chrono::milliseconds::period>(current_frame_time - last_frame_time).count();
-    last_frame_time = current_frame_time;
-
     command_buffer.reset();
     command_buffer.begin({});
 

@@ -8,6 +8,9 @@
 // boost
 #include <boost/noncopyable.hpp>
 
+// std
+#include <optional>
+
 // vulkan
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
@@ -27,6 +30,7 @@ public:
     Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface, const SDL2pp::Window &window);
     Device(Device &&other) noexcept;
     ~Device();
+
 public:
     const vk::raii::Instance &GetInstance() const { return instance_; }
     const vk::raii::SurfaceKHR &GetSurface() const { return surface_; }
@@ -44,8 +48,8 @@ public:
 
     std::vector<vk::raii::CommandBuffer> AllocateDrawCommandBuffers(uint32_t count) const;
     std::vector<vk::raii::CommandBuffer> AllocateCopyCommandBuffers(uint32_t count) const;
-
     std::vector<vk::raii::DescriptorSet> AllocateDescriptorSets(uint32_t count, const vk::raii::DescriptorSetLayout &descriptor_set_layout) const;
+
 private:
     vk::raii::PhysicalDevice PickPhysicalDevice() const;
     std::optional<uint32_t> FindQueueFamily(const vk::raii::PhysicalDevice &physical_device) const;
