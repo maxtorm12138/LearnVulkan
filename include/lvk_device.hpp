@@ -32,15 +32,13 @@ public:
     ~Device();
 
 public:
-
-public:
     std::vector<vk::PresentModeKHR> GetPresentModes() const { return physical_device_.getSurfacePresentModesKHR(*surface_.get()); }
     vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities() const { return physical_device_.getSurfaceCapabilitiesKHR(*surface_.get()); }
     std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats() const { return physical_device_.getSurfaceFormatsKHR(*surface_.get()); }
 
     const vk::raii::Device &GetDevice() const { return device_; }
     const vk::raii::PhysicalDevice &GetPhysicalDevice() const { return physical_device_; }
-    const vk::raii::Queue &GetQueue() const { return queue_; }
+    const vk::raii::Queue &GetQueue(vk::QueueFlags type) const;
 
     std::vector<vk::raii::CommandBuffer> AllocateDrawCommandBuffers(uint32_t count) const;
     std::vector<vk::raii::CommandBuffer> AllocateCopyCommandBuffers(uint32_t count) const;
@@ -58,12 +56,10 @@ private:
 
 private:
     vk::raii::PhysicalDevice physical_device_;
-    uint32_t queue_index_;
     vk::raii::Device device_;
-    vk::raii::Queue queue_;
-    vk::raii::CommandPool draw_command_pool_;
-    vk::raii::CommandPool copy_command_pool_;
 };
+
+Device MakeDevice(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface)
 }  // namespace lvk
 
 #endif
