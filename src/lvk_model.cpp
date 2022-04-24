@@ -1,22 +1,22 @@
 #include "lvk_model.hpp"
 
 // module
-#include "lvk_buffer.hpp"
+#include "lvk_allocator.hpp"
 
 namespace lvk
 {
 
-Model::Model(const lvk::Device& device, const std::vector<Vertex> &vertices) :
-    device_(device),
+Model::Model(const lvk::Allocator& allocator, const std::vector<Vertex> &vertices) :
+    allocator_(allocator),
     vertex_count_(vertices.size()),
     vertex_size_(vertices.size() * sizeof(Vertex)),
     buffer_(
-        device_.get().GetAllocator(),
+        allocator_.get(), 
         {.size = vertex_count_ * sizeof(Vertex), .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, .sharingMode = vk::SharingMode::eExclusive},
         {.usage =  VMA_MEMORY_USAGE_AUTO,})
 {
     lvk::Buffer stage_buffer(
-        device_.get().GetAllocator(),
+        allocator_.get(), 
         {.size = vertex_size_, .usage = vk::BufferUsageFlagBits::eTransferSrc,.sharingMode = vk::SharingMode::eExclusive},
         {.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
 
@@ -27,19 +27,19 @@ Model::Model(const lvk::Device& device, const std::vector<Vertex> &vertices) :
     CopyBuffer(stage_buffer, buffer_, vertex_size_);
 }
 
-Model::Model(const lvk::Device& device, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices) :
-    device_(device),
+Model::Model(const lvk::Allocator& allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices) :
+    allocator_(allocator),
     vertex_count_(vertices.size()),
     vertex_size_(vertices.size() * sizeof(Vertex)),
     index_count_(indices.size()),
     index_size_(indices.size() * sizeof(uint32_t)),
     buffer_(
-        device_.get().GetAllocator(),
+        allocator_.get(),
         {.size = vertex_count_ * sizeof(Vertex) + index_count_ * sizeof(uint32_t), .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst, .sharingMode = vk::SharingMode::eExclusive},
         {.usage =  VMA_MEMORY_USAGE_AUTO,})
 {
     lvk::Buffer stage_buffer(
-        device_.get().GetAllocator(),
+        allocator_.get(),
         {.size = vertex_size_ + index_size_,.usage = vk::BufferUsageFlagBits::eTransferSrc,.sharingMode = vk::SharingMode::eExclusive},
         {.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,.usage = VMA_MEMORY_USAGE_AUTO});
 
@@ -54,7 +54,7 @@ Model::Model(const lvk::Device& device, const std::vector<Vertex> &vertices, con
 
 
 Model::Model(Model &&other) noexcept :
-    device_(other.device_),
+    allocator_(other.allocator_),
     vertex_count_(other.vertex_count_),
     vertex_size_(other.vertex_size_),
     index_count_(other.index_count_),
@@ -83,7 +83,7 @@ void Model::CopyBuffer(const lvk::Buffer &stage_buffer, const lvk::Buffer &dest_
     vk::SubmitInfo submit_info
     {
         .commandBufferCount = submit_buffers.size(),
-        .pCommandBuffers = submit_buffers.data()
+        .pCommandBuffers = submit_buffers.data(),
     };
     vk::ArrayProxy<const vk::SubmitInfo> submit_infos(submit_info);
 

@@ -2,7 +2,6 @@
 #define _LVK_MODEL_H
 
 // module
-#include "lvk_device.hpp"
 #include "lvk_vertex.hpp"
 #include "lvk_buffer.hpp"
 
@@ -20,11 +19,12 @@
 
 namespace lvk
 {
+class Allocator;
 class Model : public boost::noncopyable
 {
 public:
-    Model(const lvk::Device& device, const std::vector<Vertex> &vertices);
-    Model(const lvk::Device& device, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
+    Model(const lvk::Allocator& allocator, const std::vector<Vertex> &vertices);
+    Model(const lvk::Allocator& allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
     Model(Model &&other) noexcept;
 public:
     void BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer);
@@ -35,7 +35,7 @@ private:
     void CopyBuffer(const lvk::Buffer &stage_buffer, const lvk::Buffer & dest_buffer, uint64_t size);
 
 private:
-    std::reference_wrapper<const lvk::Device> device_;
+    std::reference_wrapper<const lvk::Allocator> allocator_;
 
 private:
     uint32_t vertex_count_{0};
