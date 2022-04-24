@@ -1,4 +1,4 @@
-#include "lvk_device.hpp"
+#include "lvk_hardware.hpp"
 
 // std
 #include <unordered_set>
@@ -14,50 +14,25 @@
 namespace lvk
 {
 
-const std::unordered_set<std::string_view> REQUIRED_DEVICE_EXTENSION
-{
-    EXT_NAME_VK_KHR_swapchain,
-};
 
+Hardware::Hardware(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface) :
+    physical_device_(ConstructPhysicalDevice(instance)),
+    device_(ConstructDevice())
+{}
 
-const std::unordered_set<std::string_view> OPTIONAL_DEVICE_EXTENSION
-{
-    EXT_NAME_VK_KHR_portability_subset
-};
-
-Device::Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface, const SDL2pp::Window &window) :
-    instance_(instance),
-    surface_(surface),
-    window_(window),
-    physical_device_(PickPhysicalDevice()),
-    queue_index_(FindQueueFamily(physical_device_).value()),
-    device_(ConstructDevice()),
-    queue_(device_.getQueue(queue_index_, 0)),
-    draw_command_pool_(device_, {.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,.queueFamilyIndex = queue_index_}),
-    copy_command_pool_(device_, {.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,.queueFamilyIndex = queue_index_})
-{
-}
-
-Device::Device(Device &&other) noexcept :
-    instance_(other.instance_),
-    surface_(other.surface_),
-    window_(other.window_),
+Hardware::Hardware(Hardware &&other) noexcept :
     physical_device_(std::move(other.physical_device_)),
-    queue_index_(other.queue_index_),
-    device_(std::move(other.device_)),
-    queue_(std::move(other.queue_)),
-    draw_command_pool_(std::move(other.draw_command_pool_)),
-    copy_command_pool_(std::move(other.copy_command_pool_))
-{
-}
+    device_(std::move(other.device_))
+{}
 
-Device::~Device()
+vk::raii::PhysicalDevice Hardware::ConstructPhysicalDevice(const vk::raii::Instance &instance) const
 {
-}
+    std::unordered_set<std::string_view> REQUIRED_DEVICE_EXTENSION { EXT_NAME_VK_KHR_swapchain };
+    std::unordered_set<std::string_view> OPTIONAL_DEVICE_EXTENSION { EXT_NAME_VK_KHR_portability_subset };
 
-vk::raii::PhysicalDevice Device::PickPhysicalDevice() const
-{
-    for (auto &physical_device : instance_.get().enumeratePhysicalDevices())
+    auto physical_devices = instance.enumeratePhysicalDevices();
+
+    for (auto &physical_device : physical_devices)
     {
         auto properties = physical_device.getProperties();
         auto features = physical_device.getFeatures();
@@ -71,6 +46,18 @@ vk::raii::PhysicalDevice Device::PickPhysicalDevice() const
         {
             continue;
         }
+    }
+
+    for (auto &physical_device : instance.enumeratePhysicalDevices())
+    {
+        auto properties = physical_device.getProperties();
+        auto features = physical_device.getFeatures();
+
+        if (properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu)
+        {
+            continue;
+        }
+
 
         // check required extensions
         std::vector<const char *> enable_device_extensions_view;
