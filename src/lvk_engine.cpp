@@ -153,7 +153,7 @@ void EngineImpl::Run()
 
 void EngineImpl::LoadGameObjects()
 {
-    std::vector<Vertex> cube_vertex
+    std::vector<Vertex> cube_vertices
     {
         // near 0 ~ 3
         {{-0.5f, -0.5f, 0.5f}, {1.f, 0.f, 0.f}}, 
@@ -208,7 +208,7 @@ void EngineImpl::LoadGameObjects()
         20, 21, 22, 22, 23, 20
     };
 
-    game_objects_.emplace_back(MakeGameObject(std::make_shared<lvk::Model>(device_, cube_vertex, cube_indices)));
+    game_objects_.emplace_back(MakeGameObject(std::make_shared<lvk::Model>(Model::FromIndex(device_, gpu_allocator_, cube_vertices, cube_indices))));
 }
 
 void EngineImpl::RunRender()

@@ -30,7 +30,7 @@ void RenderSystem::RenderObjects(const vk::raii::CommandBuffer &command_buffer, 
             .projection = glm::mat4(1.f)
         };
         command_buffer.pushConstants<MVP>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, mvp);
-        object.GetModel()->BindVertexBuffers(command_buffer);
+        object.GetModel()->BindBuffer(command_buffer);
         object.GetModel()->Draw(command_buffer);
     }
 }

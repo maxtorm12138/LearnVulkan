@@ -27,14 +27,11 @@ namespace lvk
 class Device : public boost::noncopyable
 {
 public:
-    Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface, const SDL2pp::Window &window);
+    Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface);
     Device(Device &&other) noexcept;
     ~Device();
 
 public:
-    const vk::raii::Instance &GetInstance() const { return instance_; }
-    const vk::raii::SurfaceKHR &GetSurface() const { return surface_; }
-    const SDL2pp::Window &GetWindow() const { return window_; }
 
 public:
     std::vector<vk::PresentModeKHR> GetPresentModes() const { return physical_device_.getSurfacePresentModesKHR(*surface_.get()); }
