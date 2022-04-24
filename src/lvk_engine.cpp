@@ -63,6 +63,7 @@ private:
     lvk::Instance instance_;
     vk::raii::SurfaceKHR surface_;
     lvk::Device device_;
+    lvk::Allocator gpu_allocator_;
     lvk::Renderer renderer_;
     std::vector<lvk::GameObject> game_objects_;
     lvk::RenderSystem render_system_;
@@ -83,6 +84,7 @@ EngineImpl::EngineImpl() :
     instance_(context_, GetWindowExtensions()),
     surface_(ConstructSurface()),
     device_(instance_, surface_, window_),
+    gpu_allocator_(instance_, device_.GetPhysicalDevice(), device_.GetDevice()),
     renderer_(device_),
     render_system_(device_, renderer_.GetRenderPass()),
     engine_event_(SDL_RegisterEvents(1))
