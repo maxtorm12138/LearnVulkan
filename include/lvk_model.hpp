@@ -19,33 +19,50 @@
 
 namespace lvk
 {
+class Device;
 class Allocator;
 class Model : public boost::noncopyable
 {
 public:
-    static Model FromVertex(const std::vector<Vertex> &vertices);
-    static Model FromIndex(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
-    static Model FromObjFile(std::string_view path);
+    static Model FromVertex(
+        const lvk::Device &device,
+        const lvk::Allocator& allocator,
+        const std::vector<Vertex> &vertices);
+    
+    static Model FromIndex(
+        const lvk::Device &device,
+        const lvk::Allocator& allocator,
+        const std::vector<Vertex> &vertices,
+        const std::vector<uint32_t> &indices);
 
-    Model(const lvk::Allocator& allocator, const std::vector<Vertex> &vertices);
-    Model(const lvk::Allocator& allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
+    /*
+    static Model FromObjFile(
+        const lvk::Device &device,
+        const lvk::Allocator& allocator,
+        std::string_view path);
+    */
+
     Model(Model &&other) noexcept;
+
 public:
-    void BindVertexBuffers(const vk::raii::CommandBuffer &command_buffer);
+    void BindBuffer(const vk::raii::CommandBuffer &command_buffer);
     void Draw(const vk::raii::CommandBuffer &command_buffer);
 
 private:
-    vk::raii::DeviceMemory ConstructDeviceMemory(vk::raii::Buffer &buffer, vk::MemoryPropertyFlags properties);
-    void CopyBuffer(const lvk::Buffer &stage_buffer, const lvk::Buffer & dest_buffer, uint64_t size);
+    Model(uint32_t vertices_count, size_t vertices_size, uint32_t indices_count, size_t indices_size, lvk::Buffer buffer);
+
+    static void CopyBuffer(
+        const lvk::Device &device,
+        const lvk::Buffer &src_buffer,
+        const lvk::Buffer & dest_buffer,
+        uint64_t size);
 
 private:
-    std::reference_wrapper<const lvk::Allocator> allocator_;
+    uint32_t vertices_count_{0};
+    size_t vertices_size_{0};
+    uint32_t indices_count_{0};
+    size_t indices_size_{0};
 
-private:
-    uint32_t vertex_count_{0};
-    uint32_t vertex_size_{0};
-    uint32_t index_count_{0};
-    uint32_t index_size_{0};
     lvk::Buffer buffer_;
 };
 }

@@ -13,7 +13,14 @@ Buffer::Buffer(const lvk::Allocator &allocator, vk::BufferCreateInfo create_info
     allocator_(allocator)
 {
     VkBuffer buffer;
-    auto result = vmaCreateBuffer(allocator_.get(), reinterpret_cast<vk::BufferCreateInfo::NativeType *>(&create_info), &alloc_info, &buffer, &allocation_, &allocation_info_);
+    auto result = vmaCreateBuffer(
+        allocator_.get(),
+        reinterpret_cast<vk::BufferCreateInfo::NativeType *>(&create_info),
+        &alloc_info,
+        &buffer,
+        &allocation_,
+        &allocation_info_);
+
     if (result != VK_SUCCESS) 
     {
         throw std::runtime_error(fmt::format("vmaCreateBuffer fail result: {}", result));

@@ -11,9 +11,15 @@ namespace lvk
 class Allocator
 {
 public:
-    Allocator(const vk::raii::Instance &instance, const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device, uint32_t api_version = VK_API_VERSION_1_1);
+    Allocator(
+        const vk::raii::Instance &instance,
+        const vk::raii::PhysicalDevice &physical_device,
+        const vk::raii::Device &device,
+        uint32_t api_version = VK_API_VERSION_1_1);
+
     Allocator(Allocator &&other) noexcept;
     Allocator &operator=(Allocator &&other) noexcept;
+
     ~Allocator();
 
     operator VmaAllocator &() { return allocator_; }
