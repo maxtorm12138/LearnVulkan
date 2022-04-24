@@ -23,6 +23,10 @@ class Allocator;
 class Model : public boost::noncopyable
 {
 public:
+    static Model FromVertex(const std::vector<Vertex> &vertices);
+    static Model FromIndex(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
+    static Model FromObjFile(std::string_view path);
+
     Model(const lvk::Allocator& allocator, const std::vector<Vertex> &vertices);
     Model(const lvk::Allocator& allocator, const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
     Model(Model &&other) noexcept;
