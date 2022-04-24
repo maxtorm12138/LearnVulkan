@@ -35,7 +35,6 @@ public:
     const vk::raii::Instance &GetInstance() const { return instance_; }
     const vk::raii::SurfaceKHR &GetSurface() const { return surface_; }
     const SDL2pp::Window &GetWindow() const { return window_; }
-    const lvk::Allocator &GetAllocator() const { return allocator_; }
 
 public:
     std::vector<vk::PresentModeKHR> GetPresentModes() const { return physical_device_.getSurfacePresentModesKHR(*surface_.get()); }
@@ -48,7 +47,6 @@ public:
 
     std::vector<vk::raii::CommandBuffer> AllocateDrawCommandBuffers(uint32_t count) const;
     std::vector<vk::raii::CommandBuffer> AllocateCopyCommandBuffers(uint32_t count) const;
-    std::vector<vk::raii::DescriptorSet> AllocateDescriptorSets(uint32_t count, const vk::raii::DescriptorSetLayout &descriptor_set_layout) const;
 
 private:
     vk::raii::PhysicalDevice PickPhysicalDevice() const;
@@ -68,8 +66,6 @@ private:
     vk::raii::Queue queue_;
     vk::raii::CommandPool draw_command_pool_;
     vk::raii::CommandPool copy_command_pool_;
-    vk::raii::DescriptorPool descriptor_pool_;
-    lvk::Allocator allocator_;
 };
 }  // namespace lvk
 

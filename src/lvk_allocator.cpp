@@ -9,9 +9,17 @@
 namespace lvk
 {
 
-Allocator::Allocator(VmaAllocatorCreateInfo create_info)
+Allocator::Allocator(const vk::raii::Instance &instance, const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device, uint32_t api_version)
 {
-    auto result = vmaCreateAllocator(&create_info, &allocator_);
+    VmaAllocatorCreateInfo allocator_create_info
+    {
+        .physicalDevice = *physical_device,
+        .device = *device,
+        .instance = *instance,
+        .vulkanApiVersion = api_version
+    };
+
+    auto result = vmaCreateAllocator(&allocator_create_info, &allocator_);
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error(fmt::format("vmaCreateAllocator fail result: {}", result));
