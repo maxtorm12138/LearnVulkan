@@ -19,12 +19,14 @@ const std::vector<std::string_view> OPTIONAL_DEVICE_EXTENSION { EXT_NAME_VK_KHR_
 
 Hardware::Hardware(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface) :
     physical_device_(ConstructPhysicalDevice(instance, surface)),
-    device_(ConstructDevice())
+    device_(ConstructDevice()),
+    surface_(surface)
 {}
 
 Hardware::Hardware(Hardware &&other) noexcept :
     physical_device_(std::move(other.physical_device_)),
-    device_(std::move(other.device_))
+    device_(std::move(other.device_)),
+    surface_(other.surface_)
 {}
 
 vk::raii::PhysicalDevice Hardware::ConstructPhysicalDevice(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface) const
@@ -116,6 +118,54 @@ vk::raii::Device Hardware::ConstructDevice() const
     };
 
     return vk::raii::Device(physical_device_, device_create_info);
+}
+
+std::optional<uint32_t> Hardware::GetQueueIndex(QueueType type) const
+{
+    switch (type) 
+    {
+        case QueueType::PRESENT:
+            return GetPresentQueueIndex(physical_device_, surface_.get());
+            break;
+        case QueueType::GRAPHICS:
+            return GetFirstQueueIndex(physical_device_, vk::QueueFlagBits::eGraphics);
+            break;
+        case QueueType::COMPUTE:
+            throw std::runtime_error("unsupported now");
+            break;
+        case QueueType::TRANSFER:
+            throw std::runtime_error("unsupported now");
+            break;
+    }
+    return {};
+}
+
+std::optional<uint32_t> Hardware::GetPresentQueueIndex(const vk::raii::PhysicalDevice &physical_device, const vk::raii::SurfaceKHR &surface)
+{
+    auto queue_family_properties = physical_device.getQueueFamilyProperties();
+    for (uint32_t i = 0; i < queue_family_properties.size(); i++)
+    {
+        if (physical_device.getSurfaceSupportKHR(i, *surface))
+        {
+            return i;
+        }
+    }
+
+    return {};
+}
+
+std::optional<uint32_t> Hardware::GetFirstQueueIndex(const vk::raii::PhysicalDevice &physical_device, vk::QueueFlags type)
+{
+    auto queue_family_properties = physical_device.getQueueFamilyProperties();
+    for (uint32_t i = 0; i < queue_family_properties.size(); i++)
+    {
+        if (queue_family_properties[i].queueFlags & type)
+        {
+            return i;
+        }
+    }
+
+    return {};
 }
 
 }// namespace lvk

@@ -3,7 +3,9 @@
 // module
 #include "lvk_definitions.hpp"
 #include "lvk_instance.hpp"
-
+#include "lvk_surface.hpp"
+#include "lvk_hardware.hpp"
+#include "lvk_allocator.hpp"
 #include "lvk_vertex.hpp"
 #include "lvk_renderer.hpp"
 #include "lvk_device.hpp"
@@ -53,16 +55,15 @@ private:
 
 private:
     std::vector<const char *> GetWindowExtensions() const;
-    vk::raii::Instance ConstructInstance();
-    vk::raii::SurfaceKHR ConstructSurface();
 
 private:
     vk::raii::Context context_;
     SDL2pp::SDL sdl_;
     SDL2pp::Window window_;
     lvk::Instance instance_;
-    vk::raii::SurfaceKHR surface_;
-    lvk::Device device_;
+    lvk::Surface surface_;
+    lvk::Hardware hardware_;
+
     lvk::Allocator gpu_allocator_;
     lvk::Renderer renderer_;
     std::vector<lvk::GameObject> game_objects_;
@@ -82,9 +83,9 @@ EngineImpl::EngineImpl() :
     sdl_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
     window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN),
     instance_(context_, GetWindowExtensions()),
-    surface_(ConstructSurface()),
-    device_(instance_, surface_, window_),
-    gpu_allocator_(instance_, device_.GetPhysicalDevice(), device_.GetDevice()),
+    surface_(instance_, window_),
+    hardware_(instance_, surface_),
+    gpu_allocator_(instance_, hardware_.GetPhysicalDevice(), hardware_.GetDevice()),
     renderer_(device_),
     render_system_(device_, renderer_.GetRenderPass()),
     engine_event_(SDL_RegisterEvents(1))
@@ -107,17 +108,6 @@ std::vector<const char *> EngineImpl::GetWindowExtensions() const
     }
 
     return window_extensions;
-}
-
-
-vk::raii::SurfaceKHR EngineImpl::ConstructSurface()
-{
-    VkSurfaceKHR surface;
-    if (!SDL_Vulkan_CreateSurface(window_.Get(), **instance_, &surface))
-    {
-        throw std::runtime_error(fmt::format("SDL_Vulkan_CreateSurface fail description: {}", SDL_GetError()));
-    }
-    return vk::raii::SurfaceKHR(instance_, surface);
 }
 
 void EngineImpl::Run()
