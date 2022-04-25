@@ -14,24 +14,18 @@ namespace lvk
 class GameObject : public boost::noncopyable
 {
 public:
-    struct Transform
-    {
-        glm::vec3 translation{0.f, 0.f, 0.5f};
-        glm::vec3 scale{1.f, 1.f, 1.f};
-        glm::vec3 rotation{0.f, 0.f, 0.f};
-        glm::mat4 ModelMatrix();
-    };
 
     GameObject(size_t id, std::shared_ptr<lvk::Model> model);
     GameObject(GameObject &&other) noexcept;
 
     const std::shared_ptr<lvk::Model> &GetModel() const { return model_; }
-    Transform &GetTransform() { return transform_; }
-    const Transform &GetTransform() const { return transform_; }
+    glm::mat4 ModelMatrix() const;
 private:
     size_t id_;
     std::shared_ptr<lvk::Model> model_;
-    Transform transform_;
+    glm::vec3 translation{0.f, 0.f, 0.5f};
+    glm::vec3 scale{1.f, 1.f, 1.f};
+    glm::vec3 rotation{0.f, 0.f, 0.f};
 };
 
 GameObject MakeGameObject(std::shared_ptr<lvk::Model> model);
