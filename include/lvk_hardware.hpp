@@ -35,7 +35,8 @@ public:
     const vk::raii::Queue &GetQueue(vk::QueueFlags type) const;
 
 private:
-    vk::raii::PhysicalDevice ConstructPhysicalDevice(const vk::raii::Instance &instance) const;
+    vk::raii::PhysicalDevice ConstructPhysicalDevice(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface) const;
+    std::vector<std::string> CheckExtensionSupported(const vk::raii::PhysicalDevice &physical_device, const std::vector<std::string_view> &desired_extensions) const;
     vk::raii::Device ConstructDevice() const;
 
     std::optional<uint32_t> FindQueueFamily(const vk::raii::PhysicalDevice &physical_device) const;
