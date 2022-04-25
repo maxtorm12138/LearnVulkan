@@ -46,6 +46,11 @@ vk::raii::PhysicalDevice Hardware::ConstructPhysicalDevice(const vk::raii::Insta
             continue;
         }
 
+        if (properties.apiVersion < VK_API_VERSION_1_1)
+        {
+            continue;
+        }
+
         auto required_extensions = CheckExtensionSupported(physical_device, REQUIRED_DEVICE_EXTENSION);
         if (required_extensions.size() != REQUIRED_DEVICE_EXTENSION.size())
         {

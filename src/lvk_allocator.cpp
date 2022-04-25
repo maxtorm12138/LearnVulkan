@@ -1,5 +1,9 @@
 #include "lvk_allocator.hpp"
 
+// module
+#include "lvk_instance.hpp"
+#include "lvk_hardware.hpp"
+
 // std
 #include <stdexcept>
 
@@ -9,13 +13,16 @@
 namespace lvk
 {
 
-Allocator::Allocator(const vk::raii::Instance &instance, const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device, uint32_t api_version)
+Allocator::Allocator(
+    const lvk::Instance &instance,
+    const lvk::Hardware &hardware,
+    uint32_t api_version)
 {
     VmaAllocatorCreateInfo allocator_create_info
     {
-        .physicalDevice = *physical_device,
-        .device = *device,
-        .instance = *instance,
+        .physicalDevice = *hardware.GetPhysicalDevice(),
+        .device = *hardware.GetDevice(),
+        .instance = **instance,
         .vulkanApiVersion = api_version
     };
 
@@ -24,6 +31,7 @@ Allocator::Allocator(const vk::raii::Instance &instance, const vk::raii::Physica
     {
         throw std::runtime_error(fmt::format("vmaCreateAllocator fail result: {}", result));
     }
+
 }
 
 Allocator::Allocator(Allocator &&other) noexcept 

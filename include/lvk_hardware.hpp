@@ -26,7 +26,7 @@ namespace lvk
 class Hardware : public boost::noncopyable
 {
 public:
-    enum class QueueType { PRESENT, GRAPHICS, COMPUTE, TRANSFER};
+    enum class QueueType { PRESENT, GRAPHICS, COMPUTE, TRANSFER };
     const vk::raii::Queue &GetQueue(vk::QueueFlagBits type) const;
     Hardware(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface);
     Hardware(Hardware &&other) noexcept;

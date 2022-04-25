@@ -8,13 +8,14 @@
 
 namespace lvk
 {
+class Instance;
+class Hardware;
 class Allocator
 {
 public:
     Allocator(
-        const vk::raii::Instance &instance,
-        const vk::raii::PhysicalDevice &physical_device,
-        const vk::raii::Device &device,
+        const lvk::Instance &instance,
+        const lvk::Hardware &hardware,
         uint32_t api_version = VK_API_VERSION_1_1);
 
     Allocator(Allocator &&other) noexcept;

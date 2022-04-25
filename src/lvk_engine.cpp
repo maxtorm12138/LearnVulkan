@@ -63,14 +63,13 @@ private:
     lvk::Instance instance_;
     lvk::Surface surface_;
     lvk::Hardware hardware_;
-
     lvk::Allocator gpu_allocator_;
+    /*
     lvk::Renderer renderer_;
     std::vector<lvk::GameObject> game_objects_;
     lvk::RenderSystem render_system_;
     uint32_t engine_event_;
-
-    
+    */
     std::atomic<bool> quit_{false};
 };
 
@@ -85,10 +84,12 @@ EngineImpl::EngineImpl() :
     instance_(context_, GetWindowExtensions()),
     surface_(instance_, window_),
     hardware_(instance_, surface_),
-    gpu_allocator_(instance_, hardware_.GetPhysicalDevice(), hardware_.GetDevice()),
+    gpu_allocator_(instance_, hardware_)
+    /*
     renderer_(device_),
     render_system_(device_, renderer_.GetRenderPass()),
     engine_event_(SDL_RegisterEvents(1))
+    */
 {
 }
 

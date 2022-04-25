@@ -58,6 +58,6 @@ target_compile_definitions(lvk PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVUL
 target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} ${SDL2PP_INCLUDE_DIRS} include/)
 target_link_libraries(lvk PRIVATE ${SDL2PP_LIBRARIES} vma stb Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
 
-add_executable(draw_triangle src/draw_triangle.cpp)
-target_include_directories(draw_triangle PRIVATE include/)
-target_link_libraries(draw_triangle PRIVATE lvk Boost::log)
+add_executable(engine src/main.cpp)
+target_include_directories(engine PRIVATE include/)
+target_link_libraries(engine PRIVATE lvk Boost::log)

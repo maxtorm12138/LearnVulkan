@@ -2,7 +2,6 @@
 #define _LVK_RENDERER_H
 
 // module
-#include "lvk_device.hpp"
 #include "lvk_swapchain.hpp"
 #include "lvk_pipeline.hpp"
 #include "lvk_buffer.hpp"
@@ -23,24 +22,20 @@
 
 namespace lvk
 {
-
-struct WindowEventFlags
-{
-    std::atomic<bool> window_resized_{false};
-    std::atomic<bool> window_minimized_{false};
-};
-
-struct UniformBufferObject
-{
-  glm::mat4 model;
-  glm::mat4 view;
-  glm::mat4 projection;
-};
+class Hardware;
 
 class Renderer : public boost::noncopyable
 {
 public:
-    Renderer(const lvk::Device &device);
+    struct FrameContext
+    {
+        uint32_t frame_index;
+        const vk::raii::CommandBuffer &command_buffer;
+        const vk::raii::Framebuffer &framebuffer;
+        const vk::raii::RenderPass &render_pass;
+    };
+
+    Renderer(const lvk::Hardware &hardware);
     Renderer(Renderer &&other) noexcept;
     
     using RecordCommandBufferCallback = std::function<
@@ -61,9 +56,7 @@ private:
     std::vector<lvk::Buffer> ConstructUniformBuffers();
     
 private:
-    const lvk::Device &device_;
 
-private:
     std::unique_ptr<lvk::Swapchain> swapchain_;
     std::vector<vk::raii::CommandBuffer> command_buffers_{};
     std::vector<vk::raii::Semaphore> image_available_semaphores_{};
