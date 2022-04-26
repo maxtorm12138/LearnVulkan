@@ -13,9 +13,7 @@ class Hardware;
 class Allocator
 {
 public:
-    Allocator(
-        const lvk::Instance &instance,
-        const lvk::Hardware &hardware);
+    Allocator(const lvk::Instance &instance, const lvk::Hardware &hardware);
 
     Allocator(Allocator &&other) noexcept;
     Allocator &operator=(Allocator &&other) noexcept;
