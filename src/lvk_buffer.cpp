@@ -47,7 +47,6 @@ Buffer &Buffer::operator=(Buffer &&other) noexcept
 
 Buffer::~Buffer()
 {
-    // vmaDestroyBuffer isn't null safe
     if (allocation_ != VK_NULL_HANDLE)
     {
         vmaDestroyBuffer(allocator_.get(), buffer_, allocation_);
