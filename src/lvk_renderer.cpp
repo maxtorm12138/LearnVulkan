@@ -85,7 +85,7 @@ void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
     {
         .frame_index = frame_index,
         .command_buffer = command_buffers_[frame_index],
-        .framebuffer = swapchain_.GetFrameBuffer(frame_index),
+        .framebuffer = swapchain_.GetFrameBuffer(image_index),
         .render_pass = swapchain_.GetRenderPass(),
         .swapchain = swapchain_.GetSwapchain()
     };
