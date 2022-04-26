@@ -27,15 +27,14 @@ class Hardware : public boost::noncopyable
 {
 public:
     enum class QueueType { PRESENT, GRAPHICS, COMPUTE, TRANSFER };
-    const vk::raii::Queue &GetQueue(vk::QueueFlagBits type) const;
+
     Hardware(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface);
     Hardware(Hardware &&other) noexcept;
 
-public:
     const vk::raii::Device &GetDevice() const { return device_; }
     const vk::raii::PhysicalDevice &GetPhysicalDevice() const { return physical_device_; }
 
-    const std::optional<vk::raii::Queue &> GetQueue(QueueType type) const;
+    const std::optional<vk::raii::Queue> GetQueue(QueueType type) const;
     std::optional<uint32_t> GetQueueIndex(QueueType type) const;
 
 private:

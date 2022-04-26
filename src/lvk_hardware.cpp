@@ -125,6 +125,18 @@ vk::raii::Device Hardware::ConstructDevice() const
     return vk::raii::Device(physical_device_, device_create_info);
 }
 
+
+const std::optional<vk::raii::Queue> Hardware::GetQueue(QueueType type) const
+{
+    auto index = GetQueueIndex(type);
+    if (!index)
+    {
+        return {};
+    }
+
+    return device_.getQueue(*index, 0);
+}
+
 std::optional<uint32_t> Hardware::GetQueueIndex(QueueType type) const
 {
     switch (type) 

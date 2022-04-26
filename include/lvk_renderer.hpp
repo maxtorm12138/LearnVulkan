@@ -48,7 +48,9 @@ private:
 
     void ReCreateSwapchain();
 private:
+    const lvk::Hardware *hardware_;
 
+private:
     lvk::Swapchain swapchain_;
     vk::raii::CommandPool command_pool_;
     std::vector<vk::raii::CommandBuffer> command_buffers_;
