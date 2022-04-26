@@ -17,7 +17,7 @@ Pipeline::Pipeline(const lvk::Hardware& hardware,
                    std::vector<lvk::Shader> shaders,
                    const vk::raii::RenderPass &render_pass) :
     pipeline_layout_(pipeline_layout),
-    shaders_(shaders),
+    shaders_(std::move(shaders)),
     pipeline_(ConstructPipeline(hardware, render_pass))
 {
 }
