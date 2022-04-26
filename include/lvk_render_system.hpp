@@ -1,7 +1,6 @@
 #ifndef _LVK_RENDER_SYSTEM_H
 #define _LVK_RENDER_SYSTEM_H
 // module
-#include "lvk_device.hpp"
 #include "lvk_pipeline.hpp"
 #include "lvk_game_object.hpp"
 
@@ -14,6 +13,7 @@
 
 namespace lvk
 {
+class Hardware;
 
 struct MVP
 {
@@ -25,16 +25,14 @@ struct MVP
 class RenderSystem : public boost::noncopyable
 {
 public:
-    RenderSystem(const lvk::Device &device, const vk::raii::RenderPass &render_pass);
+    RenderSystem(const lvk::Hardware &hardware, const vk::raii::RenderPass &render_pass);
     RenderSystem(RenderSystem &&other) noexcept;
 
     void RenderObjects(const vk::raii::CommandBuffer &command_buffer, std::vector<lvk::GameObject> &objects);
 
 private:
-    vk::raii::PipelineLayout ConstructPipelineLayout();
-
-private:
-    std::reference_wrapper<const lvk::Device> device_;
+    std::vector<lvk::Shader> LoadShaders(const lvk::Hardware &hardware);
+    vk::raii::PipelineLayout ConstructPipelineLayout(const lvk::Hardware &hardware);
 
 private:
     vk::raii::PipelineLayout pipeline_layout_;
