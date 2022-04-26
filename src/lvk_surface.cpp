@@ -4,8 +4,8 @@
 #include "lvk_instance.hpp"
 
 // SDL2
-#include <SDL2/SDL_vulkan.h>
 #include <SDL2pp/SDL2pp.hh>
+#include <SDL_vulkan.h>
 
 // fmt
 #include <fmt/format.h>

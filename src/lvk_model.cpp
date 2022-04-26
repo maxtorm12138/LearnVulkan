@@ -1,7 +1,7 @@
 #include "lvk_model.hpp"
 
 // module
-#include "lvk_device.hpp"
+#include "lvk_hardware.hpp"
 #include "lvk_allocator.hpp"
 
 namespace lvk

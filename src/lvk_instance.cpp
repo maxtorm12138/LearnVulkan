@@ -5,7 +5,7 @@
 
 // SDL2
 #include <SDL2pp/SDL2pp.hh>
-#include <SDL2/SDL_vulkan.h>
+#include <SDL_vulkan.h>
 
 // std
 #include <unordered_set>

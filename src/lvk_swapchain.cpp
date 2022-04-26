@@ -17,7 +17,7 @@ Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface,
     swapchain_(ConstructSwapchain(hardware, surface, nullptr)),
     image_views_(ConstructImageViews(hardware)),
     render_pass_(ConstructRenderPass(hardware)),
-    frame_buffers_(ConstructFramebuffers())
+    frame_buffers_(ConstructFramebuffers(hardware))
 {}
 
 Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window, Swapchain previos) :
@@ -27,7 +27,7 @@ Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface,
     swapchain_(ConstructSwapchain(hardware, surface, &previos)),
     image_views_(ConstructImageViews(hardware)),
     render_pass_(std::move(previos.render_pass_)),
-    frame_buffers_(ConstructFramebuffers())
+    frame_buffers_(ConstructFramebuffers(hardware))
 {}
 
 Swapchain::Swapchain(Swapchain&& other) noexcept :

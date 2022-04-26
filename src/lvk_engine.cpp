@@ -8,7 +8,6 @@
 #include "lvk_allocator.hpp"
 #include "lvk_vertex.hpp"
 #include "lvk_renderer.hpp"
-#include "lvk_device.hpp"
 #include "lvk_game_object.hpp"
 #include "lvk_render_system.hpp"
 
