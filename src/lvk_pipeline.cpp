@@ -12,13 +12,13 @@
 namespace lvk
 {
 
-Pipeline::Pipeline(const lvk::Hardware& device,
+Pipeline::Pipeline(const lvk::Hardware& hardware,
                    const vk::raii::PipelineLayout &pipeline_layout,
                    std::vector<lvk::Shader> shaders,
                    const vk::raii::RenderPass &render_pass) :
     pipeline_layout_(pipeline_layout),
     shaders_(shaders),
-    pipeline_(ConstructPipeline(render_pass))
+    pipeline_(ConstructPipeline(hardware, render_pass))
 {
 }
 
