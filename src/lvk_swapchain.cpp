@@ -10,25 +10,33 @@
 
 namespace lvk
 {
-
-Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window, std::shared_ptr<Swapchain> previos) :
+Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window) :
     present_mode_(PickPresentMode(hardware, surface)),
     surface_format_(PickSurfaceFormat(hardware, surface)),
     extent_(PickExtent(hardware, surface, window)),
-    swapchain_(ConstructSwapchain(hardware, surface, previos)),
-    render_pass_(ConstructRenderPass()),
-    image_views_(ConstructImageViews()),
+    swapchain_(ConstructSwapchain(hardware, surface, nullptr)),
+    image_views_(ConstructImageViews(hardware)),
+    render_pass_(ConstructRenderPass(hardware)),
     frame_buffers_(ConstructFramebuffers())
-{
-}
+{}
+
+Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window, Swapchain previos) :
+    present_mode_(PickPresentMode(hardware, surface)),
+    surface_format_(PickSurfaceFormat(hardware, surface)),
+    extent_(PickExtent(hardware, surface, window)),
+    swapchain_(ConstructSwapchain(hardware, surface, &previos)),
+    image_views_(ConstructImageViews(hardware)),
+    render_pass_(std::move(previos.render_pass_)),
+    frame_buffers_(ConstructFramebuffers())
+{}
 
 Swapchain::Swapchain(Swapchain&& other) noexcept :
     present_mode_(other.present_mode_),
     surface_format_(other.surface_format_),
     extent_(other.extent_),
     swapchain_(std::move(other.swapchain_)),
-    render_pass_(std::move(other.render_pass_)),
     image_views_(std::move(other.image_views_)),
+    render_pass_(std::move(other.render_pass_)),
     frame_buffers_(std::move(other.frame_buffers_))
 {}
 
@@ -79,8 +87,16 @@ vk::Extent2D Swapchain::PickExtent(const lvk::Hardware &hardware, const lvk::Sur
     return extent;
 }
 
-vk::raii::SwapchainKHR Swapchain::ConstructSwapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, std::shared_ptr<Swapchain> previos)
+vk::raii::SwapchainKHR Swapchain::ConstructSwapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, Swapchain *previos)
 {
+    if (previos != nullptr)
+    {
+        if (surface_format_ != previos->surface_format_ || present_mode_ != previos->present_mode_)
+        {
+            throw std::runtime_error("recreate swapchain incompatible");
+        }
+    }
+
     auto surface_capabilities = hardware.GetPhysicalDevice().getSurfaceCapabilitiesKHR(**surface);
     auto image_count = surface_capabilities.minImageCount + 1;
     if (surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
@@ -110,7 +126,7 @@ vk::raii::SwapchainKHR Swapchain::ConstructSwapchain(const lvk::Hardware &hardwa
     return vk::raii::SwapchainKHR(hardware.GetDevice(), swapchain_create_info);
 }
 
-std::vector<vk::raii::ImageView> Swapchain::ConstructImageViews()
+std::vector<vk::raii::ImageView> Swapchain::ConstructImageViews(const lvk::Hardware &hardware)
 {
     std::vector<vk::raii::ImageView> image_views;
     for (auto& image : swapchain_.getImages())
@@ -130,12 +146,12 @@ std::vector<vk::raii::ImageView> Swapchain::ConstructImageViews()
                 .layerCount = 1
             }
         };
-        image_views.emplace_back(device_.GetDevice(), create_info);
+        image_views.emplace_back(hardware.GetDevice(), create_info);
     }
     return image_views;
 }
 
-vk::raii::RenderPass Swapchain::ConstructRenderPass()
+vk::raii::RenderPass Swapchain::ConstructRenderPass(const lvk::Hardware &hardware)
 {
     vk::AttachmentDescription color_attachment_description
     {
@@ -188,10 +204,10 @@ vk::raii::RenderPass Swapchain::ConstructRenderPass()
         .pDependencies = &subpass_dependency
     };
 
-    return vk::raii::RenderPass(device_.GetDevice(), render_pass_create_info);
+    return vk::raii::RenderPass(hardware.GetDevice(), render_pass_create_info);
 }
 
-std::vector<vk::raii::Framebuffer> Swapchain::ConstructFramebuffers()
+std::vector<vk::raii::Framebuffer> Swapchain::ConstructFramebuffers(const lvk::Hardware &hardware)
 {
     std::vector<vk::raii::Framebuffer> framebuffers;
     for (const auto &image_view : image_views_)
@@ -208,7 +224,7 @@ std::vector<vk::raii::Framebuffer> Swapchain::ConstructFramebuffers()
             .layers = 1
         };
 
-        framebuffers.emplace_back(device_.GetDevice(), frame_buffer_create_info);
+        framebuffers.emplace_back(hardware.GetDevice(), frame_buffer_create_info);
     }
     return framebuffers;
 }
