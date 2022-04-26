@@ -30,10 +30,7 @@ public:
     const vk::raii::Instance & operator*() const { return instance_; }
 
 private:
-    vk::raii::Instance ConstructInstance(const SDL2pp::Window &window);
-
-private:
-    std::reference_wrapper<const vk::raii::Context> context_;
+    vk::raii::Instance ConstructInstance(const vk::raii::Context &context, const SDL2pp::Window &window);
 
 private:
     vk::raii::Instance instance_;

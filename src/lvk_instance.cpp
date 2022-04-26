@@ -32,15 +32,13 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
 }
 
 Instance::Instance(const vk::raii::Context &context, const SDL2pp::Window &window) :
-    context_(context),
-    instance_(ConstructInstance(window))
+    instance_(ConstructInstance(context, window))
     #ifndef NDEBUG
     ,debug_messenger_(instance_, {.messageSeverity = ENABLE_MESSAGE_SEVERITY, .messageType = ENABLE_MESSAGE_TYPE, .pfnUserCallback = &DebugCallback})
     #endif
 {}
 
 Instance::Instance(Instance &&other) noexcept :
-    context_(other.context_),
     instance_(std::move(other.instance_))
     #ifndef NDEBUG
     ,debug_messenger_(std::move(other.debug_messenger_))
@@ -50,7 +48,6 @@ Instance::Instance(Instance &&other) noexcept :
 
 Instance &Instance::operator=(Instance &&other) noexcept
 {
-    context_ = other.context_;
     instance_ = std::move(other.instance_);
     #ifndef NDEBUG
     debug_messenger_ = std::move(other.debug_messenger_);
@@ -58,7 +55,7 @@ Instance &Instance::operator=(Instance &&other) noexcept
     return *this;
 }
 
-vk::raii::Instance Instance::ConstructInstance(const SDL2pp::Window &window)
+vk::raii::Instance Instance::ConstructInstance(const vk::raii::Context &context, const SDL2pp::Window &window)
 {
     #ifndef NDEBUG
     std::vector<const char *> REQUIRED_LAYERS{ LAYER_NAME_VK_LAYER_KHRONOS_validation.data() };
@@ -88,14 +85,14 @@ vk::raii::Instance Instance::ConstructInstance(const SDL2pp::Window &window)
 
     auto enable_layers = REQUIRED_LAYERS;
     // check optional layers
-    auto layer_properties = context_.get().enumerateInstanceLayerProperties();
+    auto layer_properties = context.enumerateInstanceLayerProperties();
     std::vector<const char *> layers;
     std::transform(layer_properties.begin(), layer_properties.end(), std::back_inserter(layers), [](auto &&prop) { return prop.layerName.data(); });
     std::copy_if(layers.begin(), layers.end(), std::back_inserter(enable_layers), [&](auto &&name) { return OPTIONAL_LAYERS.contains(name); });
 
     auto enable_extensions = REQUIRED_EXTENSIONS;
     // check optional extensions
-    auto extension_properties = context_.get().enumerateInstanceExtensionProperties();
+    auto extension_properties = context.enumerateInstanceExtensionProperties();
     std::vector<const char *> extensions;
     std::transform(extension_properties.begin(), extension_properties.end(), std::back_inserter(extensions), [](auto &&prop) { return prop.extensionName.data(); });
     std::copy_if(extensions.begin(), extensions.end(), std::back_inserter(enable_extensions), [&](auto &&extension) { return OPTIONAL_EXTENSIONS.contains(extension); });
@@ -132,7 +129,7 @@ vk::raii::Instance Instance::ConstructInstance(const SDL2pp::Window &window)
     chain.unlink<vk::DebugUtilsMessengerCreateInfoEXT>();
     #endif
 
-    return vk::raii::Instance(context_, chain.get<vk::InstanceCreateInfo>());
+    return vk::raii::Instance(context, chain.get<vk::InstanceCreateInfo>());
 
 }
 
