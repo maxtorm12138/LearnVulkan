@@ -3,6 +3,10 @@
 // module
 #include "lvk_definitions.hpp"
 
+// SDL2
+#include <SDL2pp/SDL2pp.hh>
+#include <SDL2/SDL_vulkan.h>
+
 // std
 #include <unordered_set>
 
@@ -27,9 +31,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
     return VK_FALSE;
 }
 
-Instance::Instance(const vk::raii::Context &context, const std::vector<const char *> &window_extensions) :
+Instance::Instance(const vk::raii::Context &context, const SDL2pp::Window &window) :
     context_(context),
-    instance_(ConstructInstance(window_extensions))
+    instance_(ConstructInstance(window))
     #ifndef NDEBUG
     ,debug_messenger_(instance_, {.messageSeverity = ENABLE_MESSAGE_SEVERITY, .messageType = ENABLE_MESSAGE_TYPE, .pfnUserCallback = &DebugCallback})
     #endif
@@ -54,7 +58,7 @@ Instance &Instance::operator=(Instance &&other) noexcept
     return *this;
 }
 
-vk::raii::Instance Instance::ConstructInstance(const std::vector<const char *> &window_extensions)
+vk::raii::Instance Instance::ConstructInstance(const SDL2pp::Window &window)
 {
     #ifndef NDEBUG
     std::vector<const char *> REQUIRED_LAYERS{ LAYER_NAME_VK_LAYER_KHRONOS_validation.data() };
@@ -66,6 +70,19 @@ vk::raii::Instance Instance::ConstructInstance(const std::vector<const char *> &
 
     std::unordered_set<std::string_view> OPTIONAL_LAYERS {};
     std::unordered_set<std::string_view> OPTIONAL_EXTENSIONS{ EXT_NAME_VK_KHR_get_physical_device_properties2.data() };
+
+    std::vector<const char *> window_extensions;
+    unsigned int ext_ct{0};
+    if (SDL_Vulkan_GetInstanceExtensions(window.Get(), &ext_ct, nullptr) != SDL_TRUE)
+    {
+        throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
+    }
+
+    window_extensions.resize(ext_ct);
+    if (SDL_Vulkan_GetInstanceExtensions(window.Get(), &ext_ct, window_extensions.data()) != SDL_TRUE)
+    {
+        throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
+    }
 
     std::copy(window_extensions.begin(), window_extensions.end(), std::inserter(REQUIRED_EXTENSIONS, REQUIRED_EXTENSIONS.end()));
 

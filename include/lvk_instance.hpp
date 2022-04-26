@@ -8,13 +8,18 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
+namespace SDL2pp
+{
+class Window;    
+}
+
 namespace lvk
 {
 
 class Instance : public boost::noncopyable
 {
 public:
-    Instance(const vk::raii::Context &context, const std::vector<const char *> &window_extensions);
+    Instance(const vk::raii::Context &context, const SDL2pp::Window &window);
     Instance(Instance &&other) noexcept;
     Instance &operator=(Instance &&other) noexcept;
 
@@ -25,7 +30,7 @@ public:
     const vk::raii::Instance & operator*() const { return instance_; }
 
 private:
-    vk::raii::Instance ConstructInstance(const std::vector<const char *> &window_extensions);
+    vk::raii::Instance ConstructInstance(const SDL2pp::Window &window);
 
 private:
     std::reference_wrapper<const vk::raii::Context> context_;

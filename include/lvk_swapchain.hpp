@@ -1,9 +1,6 @@
 #ifndef _LVK_SWAPCHAIN_H
 #define _LVK_SWAPCHAIN_H
 
-// module
-#include "lvk_device.hpp"
-
 // boost
 #include <boost/noncopyable.hpp>
 
@@ -11,17 +8,20 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
-// SDLpp
-#include <SDL2pp/SDL2pp.hh>
-
+namespace SDL2pp
+{
+class Window;
+}
 
 namespace lvk
 {
+class Hardware;
+class Surface;
 
 class Swapchain : public boost::noncopyable
 {
 public:
-    Swapchain(const lvk::Device& device, std::shared_ptr<Swapchain> previos = nullptr);
+    Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window, std::shared_ptr<Swapchain> previos = nullptr);
     Swapchain(Swapchain&& other) noexcept;
 
 public:
@@ -29,17 +29,15 @@ public:
     const vk::raii::RenderPass &GetRenderPass() const { return render_pass_; }
     const vk::raii::Framebuffer &GetFrameBuffer(uint32_t index) const { return frame_buffers_[index];}
     vk::Extent2D GetExtent() const { return extent_; }
+
 private:
-    vk::PresentModeKHR PickPresentMode();
-    vk::SurfaceFormatKHR PickSurfaceFormat();
-    vk::Extent2D PickExtent();
-    vk::raii::SwapchainKHR ConstructSwapchain(std::shared_ptr<Swapchain> previos);
+    static vk::PresentModeKHR PickPresentMode(const lvk::Hardware &hardware, const lvk::Surface &surface);
+    static vk::SurfaceFormatKHR PickSurfaceFormat(const lvk::Hardware &hardware, const lvk::Surface &surface);
+    static vk::Extent2D PickExtent(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window);
+    vk::raii::SwapchainKHR ConstructSwapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, std::shared_ptr<Swapchain> previos);
     std::vector<vk::raii::ImageView> ConstructImageViews();
     vk::raii::RenderPass ConstructRenderPass();
     std::vector<vk::raii::Framebuffer> ConstructFramebuffers();
-
-private:
-    const lvk::Device &device_;
 
 private:
     vk::PresentModeKHR present_mode_;

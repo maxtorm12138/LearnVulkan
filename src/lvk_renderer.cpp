@@ -1,5 +1,8 @@
 #include "lvk_renderer.hpp"
 
+// module
+#include "lvk_hardware.hpp"
+
 // fmt
 #include <fmt/format.h>
 
@@ -14,7 +17,7 @@ const std::unordered_set<vk::Result> WINDOW_RESIZE_ERRORS
     vk::Result::eSuboptimalKHR
 };
 
-Renderer::Renderer(const lvk::Device &device) :
+Renderer::Renderer(const lvk::Hardware &hardware) :
     device_(device),
     swapchain_(new lvk::Swapchain(device_)),
     command_buffers_(device_.AllocateDrawCommandBuffers(MAX_FRAMES_IN_FLIGHT))

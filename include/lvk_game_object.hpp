@@ -20,12 +20,23 @@ public:
 
     const std::shared_ptr<lvk::Model> &GetModel() const { return model_; }
     glm::mat4 ModelMatrix() const;
+
+    glm::vec3 GetTranslation() const { return translation_; }
+    void SetTranslation(const glm::vec3 &translation) { translation_ = translation; }
+
+    glm::vec3 GetScale() const { return scale_; }
+    void SetScale(const glm::vec3 &scale) { scale_ = scale; }
+
+    glm::vec3 GetRotation() const { return rotation_; }
+    void SetRotation(const glm::vec3 &rotation) { rotation_ = rotation; }
+
+
 private:
     size_t id_;
     std::shared_ptr<lvk::Model> model_;
-    glm::vec3 translation{0.f, 0.f, 0.5f};
-    glm::vec3 scale{1.f, 1.f, 1.f};
-    glm::vec3 rotation{0.f, 0.f, 0.f};
+    glm::vec3 translation_{0.f, 0.f, 0.5f};
+    glm::vec3 scale_{1.f, 1.f, 1.f};
+    glm::vec3 rotation_{0.f, 0.f, 0.f};
 };
 
 GameObject MakeGameObject(std::shared_ptr<lvk::Model> model);

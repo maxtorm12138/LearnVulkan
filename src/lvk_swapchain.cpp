@@ -1,5 +1,9 @@
 #include "lvk_swapchain.hpp"
 
+// module
+#include "lvk_hardware.hpp"
+#include "lvk_surface.hpp"
+
 // sdl2
 #include <SDL_vulkan.h>
 #include <SDL2pp/SDL2pp.hh>
@@ -7,12 +11,11 @@
 namespace lvk
 {
 
-Swapchain::Swapchain(const lvk::Device& device, std::shared_ptr<Swapchain> previos) :
-    device_(device),
-    present_mode_(PickPresentMode()),
-    surface_format_(PickSurfaceFormat()),
-    extent_(PickExtent()),
-    swapchain_(ConstructSwapchain(previos)),
+Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window, std::shared_ptr<Swapchain> previos) :
+    present_mode_(PickPresentMode(hardware, surface)),
+    surface_format_(PickSurfaceFormat(hardware, surface)),
+    extent_(PickExtent(hardware, surface, window)),
+    swapchain_(ConstructSwapchain(hardware, surface, previos)),
     render_pass_(ConstructRenderPass()),
     image_views_(ConstructImageViews()),
     frame_buffers_(ConstructFramebuffers())
@@ -20,7 +23,6 @@ Swapchain::Swapchain(const lvk::Device& device, std::shared_ptr<Swapchain> previ
 }
 
 Swapchain::Swapchain(Swapchain&& other) noexcept :
-    device_(other.device_),
     present_mode_(other.present_mode_),
     surface_format_(other.surface_format_),
     extent_(other.extent_),
@@ -31,9 +33,10 @@ Swapchain::Swapchain(Swapchain&& other) noexcept :
 {}
 
 
-vk::PresentModeKHR Swapchain::PickPresentMode()
+vk::PresentModeKHR Swapchain::PickPresentMode(const lvk::Hardware &hardware, const lvk::Surface &surface)
 {
-    for (const auto& mode : device_.GetPresentModes())
+    auto present_modes = hardware.GetPhysicalDevice().getSurfacePresentModesKHR(**surface);
+    for (const auto& mode : present_modes)
     {
         if (mode == vk::PresentModeKHR::eMailbox)
         {
@@ -43,9 +46,9 @@ vk::PresentModeKHR Swapchain::PickPresentMode()
     return vk::PresentModeKHR::eFifo;
 }
 
-vk::SurfaceFormatKHR Swapchain::PickSurfaceFormat()
+vk::SurfaceFormatKHR Swapchain::PickSurfaceFormat(const lvk::Hardware &hardware, const lvk::Surface &surface)
 {
-    auto surface_formats = device_.GetSurfaceFormats();
+    auto surface_formats = hardware.GetPhysicalDevice().getSurfaceFormatsKHR(**surface);
     for (const auto& surface_format: surface_formats)
     {
         if (surface_format.format == vk::Format::eB8G8R8A8Srgb && surface_format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
@@ -56,9 +59,9 @@ vk::SurfaceFormatKHR Swapchain::PickSurfaceFormat()
     return surface_formats[0];
 }
 
-vk::Extent2D Swapchain::PickExtent()
+vk::Extent2D Swapchain::PickExtent(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window)
 {
-    auto surface_capabilities = device_.GetSurfaceCapabilities();
+    auto surface_capabilities = hardware.GetPhysicalDevice().getSurfaceCapabilitiesKHR(**surface);
     vk::Extent2D extent;
     if (surface_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
     {
@@ -67,7 +70,7 @@ vk::Extent2D Swapchain::PickExtent()
     else
     {
         int w,h;
-        SDL_Vulkan_GetDrawableSize(device_.GetWindow().Get(), &w, &h);
+        SDL_Vulkan_GetDrawableSize(window.Get(), &w, &h);
 
         extent.width = std::clamp(static_cast<uint32_t>(w), surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
         extent.height = std::clamp(static_cast<uint32_t>(h), surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
@@ -76,9 +79,9 @@ vk::Extent2D Swapchain::PickExtent()
     return extent;
 }
 
-vk::raii::SwapchainKHR Swapchain::ConstructSwapchain(std::shared_ptr<Swapchain> previos)
+vk::raii::SwapchainKHR Swapchain::ConstructSwapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, std::shared_ptr<Swapchain> previos)
 {
-    auto surface_capabilities = device_.GetSurfaceCapabilities();
+    auto surface_capabilities = hardware.GetPhysicalDevice().getSurfaceCapabilitiesKHR(**surface);
     auto image_count = surface_capabilities.minImageCount + 1;
     if (surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
     {
@@ -87,7 +90,7 @@ vk::raii::SwapchainKHR Swapchain::ConstructSwapchain(std::shared_ptr<Swapchain> 
 
     vk::SwapchainCreateInfoKHR swapchain_create_info
     {
-        .surface = *device_.GetSurface(),
+        .surface = **surface,
         .minImageCount = image_count,
         .imageFormat = surface_format_.format,
         .imageColorSpace = surface_format_.colorSpace,
@@ -104,7 +107,7 @@ vk::raii::SwapchainKHR Swapchain::ConstructSwapchain(std::shared_ptr<Swapchain> 
         .oldSwapchain = (previos == nullptr ? nullptr : *previos->swapchain_)
     };
 
-    return vk::raii::SwapchainKHR(device_.GetDevice(), swapchain_create_info);
+    return vk::raii::SwapchainKHR(hardware.GetDevice(), swapchain_create_info);
 }
 
 std::vector<vk::raii::ImageView> Swapchain::ConstructImageViews()

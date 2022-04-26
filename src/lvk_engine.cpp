@@ -81,7 +81,7 @@ void EngineImplDeleter::operator()(EngineImpl *ptr)
 EngineImpl::EngineImpl() :
     sdl_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
     window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN),
-    instance_(context_, GetWindowExtensions()),
+    instance_(context_, window_),
     surface_(instance_, window_),
     hardware_(instance_, surface_),
     gpu_allocator_(instance_, hardware_)
@@ -95,20 +95,6 @@ EngineImpl::EngineImpl() :
 
 std::vector<const char *> EngineImpl::GetWindowExtensions() const
 {
-    std::vector<const char *> window_extensions;
-    unsigned int ext_ct{0};
-    if (SDL_Vulkan_GetInstanceExtensions(window_.Get(), &ext_ct, nullptr) != SDL_TRUE)
-    {
-        throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
-    }
-
-    window_extensions.resize(ext_ct);
-    if (SDL_Vulkan_GetInstanceExtensions(window_.Get(), &ext_ct, window_extensions.data()) != SDL_TRUE)
-    {
-        throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
-    }
-
-    return window_extensions;
 }
 
 void EngineImpl::Run()
