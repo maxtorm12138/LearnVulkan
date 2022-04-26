@@ -15,8 +15,7 @@ namespace lvk
 
 Allocator::Allocator(
     const lvk::Instance &instance,
-    const lvk::Hardware &hardware,
-    uint32_t api_version)
+    const lvk::Hardware &hardware)
 {
     VmaAllocatorCreateInfo allocator_create_info
     {
