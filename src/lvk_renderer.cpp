@@ -2,6 +2,10 @@
 
 // module
 #include "lvk_hardware.hpp"
+#include "lvk_surface.hpp"
+
+// SDL2
+#include <SDL2pp/SDL2pp.hh>
 
 // fmt
 #include <fmt/format.h>
@@ -11,16 +15,10 @@
 namespace lvk
 {
 
-const std::unordered_set<vk::Result> WINDOW_RESIZE_ERRORS
-{
-    vk::Result::eErrorOutOfDateKHR,
-    vk::Result::eSuboptimalKHR
-};
-
-Renderer::Renderer(const lvk::Hardware &hardware) :
-    device_(device),
-    swapchain_(new lvk::Swapchain(device_)),
-    command_buffers_(device_.AllocateDrawCommandBuffers(MAX_FRAMES_IN_FLIGHT))
+Renderer::Renderer(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window) :
+    swapchain_(hardware, surface, window),
+    command_pool_(ConstructCommandPool(hardware)),
+    command_buffers_(ConstructCommandBuffers(hardware))
 {
     vk::SemaphoreCreateInfo semaphore_create_info{};
     vk::FenceCreateInfo fence_create_info{.flags = vk::FenceCreateFlagBits::eSignaled};
@@ -31,6 +29,29 @@ Renderer::Renderer(const lvk::Hardware &hardware) :
         in_flight_fences_.emplace_back(device_.GetDevice(), fence_create_info);
     }
 }
+
+vk::raii::CommandPool Renderer::ConstructCommandPool(const lvk::Hardware &hardware)
+{
+    vk::CommandPoolCreateInfo command_pool_create_info
+    {
+        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer, 
+        .queueFamilyIndex = hardware.GetQueueIndex(Hardware::QueueType::GRAPHICS).value(),
+    };
+    return vk::raii::CommandPool(hardware.GetDevice(), command_pool_create_info);
+}
+
+std::vector<vk::raii::CommandBuffer> Renderer::ConstructCommandBuffers(const lvk::Hardware &hardware)
+{
+    vk::CommandBufferAllocateInfo command_buffer_allocate_info
+    {
+        .commandPool = *command_pool_,
+        .level = vk::CommandBufferLevel::ePrimary,
+        .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
+    };
+    return hardware.GetDevice().allocateCommandBuffers(command_buffer_allocate_info);
+}
+
+
 
 void Renderer::DrawFrame(RecordCommandBufferCallback recorder)
 {

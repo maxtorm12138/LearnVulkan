@@ -3,8 +3,6 @@
 
 // module
 #include "lvk_swapchain.hpp"
-#include "lvk_pipeline.hpp"
-#include "lvk_buffer.hpp"
 
 // boost
 #include <boost/noncopyable.hpp>
@@ -13,16 +11,15 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
-// GLM
-#include <glm/glm.hpp>
-
-// std
-#include <unordered_set>
-
+namespace SDL2pp
+{
+class Window;
+}
 
 namespace lvk
 {
 class Hardware;
+class Surface;
 
 class Renderer : public boost::noncopyable
 {
@@ -33,33 +30,31 @@ public:
         const vk::raii::CommandBuffer &command_buffer;
         const vk::raii::Framebuffer &framebuffer;
         const vk::raii::RenderPass &render_pass;
+        const vk::raii::SwapchainKHR &swapchain;
     };
 
-    Renderer(const lvk::Hardware &hardware);
+    Renderer(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window);
     Renderer(Renderer &&other) noexcept;
     
-    using RecordCommandBufferCallback = std::function<
-        void(const vk::raii::CommandBuffer &command_buffer,
-             const vk::raii::Framebuffer &framebuffer,
-             const lvk::Swapchain &swapchain)>;
+    using RecordCommandBufferCallback = std::function<void(const FrameContext &context)>;
     void DrawFrame(RecordCommandBufferCallback recorder);
 
 public:
     uint64_t GetFrameCounter() const { return frame_counter_; }
-    const std::unique_ptr<lvk::Swapchain> &GetSwapchain() const { return swapchain_; }
-    const vk::raii::RenderPass &GetRenderPass() const { return swapchain_->GetRenderPass(); }
 
 private:
+    vk::raii::CommandPool ConstructCommandPool(const lvk::Hardware &hardware);
+    std::vector<vk::raii::CommandBuffer> ConstructCommandBuffers(const lvk::Hardware &hardware);
+
     void ReCreateSwapchain();
-    std::vector<lvk::Buffer> ConstructUniformBuffers();
-    
 private:
 
-    std::unique_ptr<lvk::Swapchain> swapchain_;
-    std::vector<vk::raii::CommandBuffer> command_buffers_{};
-    std::vector<vk::raii::Semaphore> image_available_semaphores_{};
-    std::vector<vk::raii::Semaphore> render_finishend_semaphores_{};
-    std::vector<vk::raii::Fence> in_flight_fences_{};
+    lvk::Swapchain swapchain_;
+    vk::raii::CommandPool command_pool_;
+    std::vector<vk::raii::CommandBuffer> command_buffers_;
+    std::vector<vk::raii::Semaphore> image_available_semaphores_;
+    std::vector<vk::raii::Semaphore> render_finishend_semaphores_;
+    std::vector<vk::raii::Fence> in_flight_fences_;
     uint64_t frame_counter_{0};
 };
 
