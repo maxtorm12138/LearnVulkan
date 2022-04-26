@@ -1,4 +1,7 @@
 #include "lvk_pipeline.hpp"
+// module
+#include "lvk_hardware.hpp"
+#include "lvk_vertex.hpp"
 
 // std
 #include <fstream>
@@ -6,51 +9,38 @@
 // fmt
 #include <fmt/format.h>
 
-// module
-#include "lvk_vertex.hpp"
-
 namespace lvk
 {
 
-Pipeline::Pipeline(const lvk::Device& device,
+Pipeline::Pipeline(const lvk::Hardware& device,
                    const vk::raii::PipelineLayout &pipeline_layout,
-                   lvk::Shader vertex_shader,
-                   lvk::Shader fragment_shader,
+                   std::vector<lvk::Shader> shaders,
                    const vk::raii::RenderPass &render_pass) :
-    device_(device),
     pipeline_layout_(pipeline_layout),
-    vertex_shader_(std::move(vertex_shader)),
-    fragment_shader_(std::move(fragment_shader)),
+    shaders_(shaders),
     pipeline_(ConstructPipeline(render_pass))
 {
 }
 
 
 Pipeline::Pipeline(Pipeline&& other) noexcept :
-    device_(other.device_),
     pipeline_layout_(other.pipeline_layout_),
-    vertex_shader_(std::move(other.vertex_shader_)),
-    fragment_shader_(std::move(other.fragment_shader_)),
+    shaders_(std::move(other.shaders_)),
     pipeline_(std::move(other.pipeline_))
 {}
 
-vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &render_pass)
+vk::raii::Pipeline Pipeline::ConstructPipeline(const lvk::Hardware& hardware, const vk::raii::RenderPass &render_pass)
 {
-    std::array<vk::PipelineShaderStageCreateInfo, 2> shader_stage_create_infos
+    std::vector<vk::PipelineShaderStageCreateInfo> shader_stage_create_infos;
+    for (const auto &shader : shaders_)
     {
-        vk::PipelineShaderStageCreateInfo
+        shader_stage_create_infos.emplace_back(vk::PipelineShaderStageCreateInfo
         {
-            .stage = vk::ShaderStageFlagBits::eVertex,
-            .module = *vertex_shader_.GetShaderModule(),
-            .pName = "main"
-        },
-        vk::PipelineShaderStageCreateInfo
-        {
-            .stage = vk::ShaderStageFlagBits::eFragment,
-            .module = *fragment_shader_.GetShaderModule(),
-            .pName = "main"
-        }
-    };
+            .stage = shader.GetShaderStage(),
+            .module = *shader.GetShaderModule(),
+            .pName = shader.GetShaderName().c_str()
+        });
+    }
 
     vk::PipelineViewportStateCreateInfo viewport_state_create_info
     {
@@ -134,7 +124,7 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
 
     vk::GraphicsPipelineCreateInfo graphic_pipeline_create_info
     {
-        .stageCount = shader_stage_create_infos.size(),
+        .stageCount = static_cast<uint32_t>(shader_stage_create_infos.size()),
         .pStages = shader_stage_create_infos.data(),
         .pVertexInputState = &vertex_input_state_create_info,
         .pInputAssemblyState = &input_assembly_state_create_info,
@@ -151,7 +141,7 @@ vk::raii::Pipeline Pipeline::ConstructPipeline(const vk::raii::RenderPass &rende
         .basePipelineIndex = -1,
     };
 
-    return vk::raii::Pipeline(device_.get().GetDevice(), {nullptr}, graphic_pipeline_create_info);
+    return vk::raii::Pipeline(hardware.GetDevice(), {nullptr}, graphic_pipeline_create_info);
 }
 
 void Pipeline::BindPipeline(const vk::raii::CommandBuffer &command_buffer) const

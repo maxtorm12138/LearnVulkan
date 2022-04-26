@@ -19,19 +19,21 @@
 
 namespace lvk
 {
-class Device;
+class Hardware;
 class Allocator;
 class Model : public boost::noncopyable
 {
 public:
     static Model FromVertex(
-        const lvk::Device &device,
+        const lvk::Hardware &hardware,
         const lvk::Allocator& allocator,
+        const vk::raii::CommandPool &command_pool,
         const std::vector<Vertex> &vertices);
     
     static Model FromIndex(
-        const lvk::Device &device,
+        const lvk::Hardware &hardware,
         const lvk::Allocator& allocator,
+        const vk::raii::CommandPool &command_pool,
         const std::vector<Vertex> &vertices,
         const std::vector<uint32_t> &indices);
 
@@ -52,7 +54,8 @@ private:
     Model(uint32_t vertices_count, size_t vertices_size, uint32_t indices_count, size_t indices_size, lvk::Buffer buffer);
 
     static void CopyBuffer(
-        const lvk::Device &device,
+        const lvk::Hardware &hardware,
+        const vk::raii::CommandPool &command_pool,
         const lvk::Buffer &src_buffer,
         const lvk::Buffer & dest_buffer,
         uint64_t size);

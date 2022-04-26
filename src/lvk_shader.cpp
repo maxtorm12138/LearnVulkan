@@ -1,6 +1,7 @@
 #include "lvk_shader.hpp"
 
-// boost
+// module
+#include "lvk_hardware.hpp"
 
 // std
 #include <fstream>
@@ -11,18 +12,17 @@
 namespace lvk
 {
 Shader::Shader(
-    const lvk::Device &device,
+    const lvk::Hardware &hardware,
     std::string_view shader_name,
     std::string_view shader_path,
     vk::ShaderStageFlagBits shader_stage) :
-    device_(device),
     shader_name_(shader_name),
     shader_stage_(shader_stage),
-    shader_module_(ConstructShaderModule(shader_path))
+    shader_module_(ConstructShaderModule(hardware, shader_path))
 {}
 
 Shader::Shader(Shader &&other) noexcept :
-    device_(other.device_),
+    shader_name_(std::move(other.shader_name_)),
     shader_stage_(other.shader_stage_),
     shader_module_(std::move(other.shader_module_))
 {}
@@ -41,7 +41,7 @@ std::vector<char, boost::alignment::aligned_allocator<char, 8>> Shader::ReadShad
     return buffer;
 }
 
-vk::raii::ShaderModule Shader::ConstructShaderModule(std::string_view file_name)
+vk::raii::ShaderModule Shader::ConstructShaderModule(const lvk::Hardware &hardware, std::string_view file_name)
 {
     auto code = ReadShaderFile(file_name);
     BOOST_LOG_TRIVIAL(debug) << fmt::format("read {} size: {} ptr: {}", file_name, code.size(), static_cast<void *>(code.data()));
@@ -51,7 +51,7 @@ vk::raii::ShaderModule Shader::ConstructShaderModule(std::string_view file_name)
         .codeSize = code.size(),
         .pCode = reinterpret_cast<uint32_t *>(code.data())
     };
-    return vk::raii::ShaderModule(device_.get().GetDevice(), shader_module_create_info);
+    return vk::raii::ShaderModule(hardware.GetDevice(), shader_module_create_info);
 }
 
 }
