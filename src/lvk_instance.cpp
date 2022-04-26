@@ -104,7 +104,7 @@ vk::raii::Instance Instance::ConstructInstance(const vk::raii::Context &context,
         .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
         .pEngineName = "Vulkan Engine",
         .engineVersion = VK_MAKE_VERSION(0, 1, 0),
-        .apiVersion = VK_API_VERSION_1_1,
+        .apiVersion = api_version_,
     };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::DebugUtilsMessengerCreateInfoEXT> chain

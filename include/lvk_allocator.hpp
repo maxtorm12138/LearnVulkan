@@ -15,8 +15,7 @@ class Allocator
 public:
     Allocator(
         const lvk::Instance &instance,
-        const lvk::Hardware &hardware,
-        uint32_t api_version = VK_API_VERSION_1_1);
+        const lvk::Hardware &hardware);
 
     Allocator(Allocator &&other) noexcept;
     Allocator &operator=(Allocator &&other) noexcept;
@@ -25,6 +24,7 @@ public:
 
     operator VmaAllocator &() { return allocator_; }
     operator const VmaAllocator &() const { return allocator_; }
+
 private:
     VmaAllocator allocator_{VK_NULL_HANDLE};
 };

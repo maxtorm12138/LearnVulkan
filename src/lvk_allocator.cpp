@@ -23,7 +23,7 @@ Allocator::Allocator(
         .physicalDevice = *hardware.GetPhysicalDevice(),
         .device = *hardware.GetDevice(),
         .instance = **instance,
-        .vulkanApiVersion = api_version
+        .vulkanApiVersion = instance.GetApiVersion()
     };
 
     auto result = vmaCreateAllocator(&allocator_create_info, &allocator_);

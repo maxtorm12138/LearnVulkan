@@ -29,10 +29,12 @@ public:
     vk::raii::Instance & operator*() { return instance_; }
     const vk::raii::Instance & operator*() const { return instance_; }
 
+    uint32_t GetApiVersion() const { return api_version_; }
 private:
     vk::raii::Instance ConstructInstance(const vk::raii::Context &context, const SDL2pp::Window &window);
 
 private:
+    uint32_t api_version_ = VK_API_VERSION_1_1;
     vk::raii::Instance instance_;
     #ifndef NDEBUG
     vk::raii::DebugUtilsMessengerEXT debug_messenger_;
