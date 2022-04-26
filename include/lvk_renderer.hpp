@@ -49,8 +49,6 @@ public:
     const std::unique_ptr<lvk::Swapchain> &GetSwapchain() const { return swapchain_; }
     const vk::raii::RenderPass &GetRenderPass() const { return swapchain_->GetRenderPass(); }
 
-    void NotifyWindowEvent(SDL_Event *event);
-
 private:
     void ReCreateSwapchain();
     std::vector<lvk::Buffer> ConstructUniformBuffers();
@@ -63,7 +61,6 @@ private:
     std::vector<vk::raii::Semaphore> render_finishend_semaphores_{};
     std::vector<vk::raii::Fence> in_flight_fences_{};
     uint64_t frame_counter_{0};
-    WindowEventFlags window_event_flags_;
 };
 
 }
