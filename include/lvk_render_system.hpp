@@ -1,6 +1,8 @@
 #ifndef _LVK_RENDER_SYSTEM_H
 #define _LVK_RENDER_SYSTEM_H
+
 // module
+#include "lvk_definitions.hpp"
 #include "lvk_pipeline.hpp"
 #include "lvk_game_object.hpp"
 
@@ -28,7 +30,7 @@ public:
     RenderSystem(const lvk::Hardware &hardware, const vk::raii::RenderPass &render_pass);
     RenderSystem(RenderSystem &&other) noexcept;
 
-    void RenderObjects(const vk::raii::CommandBuffer &command_buffer, std::vector<lvk::GameObject> &objects);
+    void RenderObjects(const FrameContext &context, std::vector<lvk::GameObject> &objects);
 
 private:
     std::vector<lvk::Shader> LoadShaders(const lvk::Hardware &hardware);

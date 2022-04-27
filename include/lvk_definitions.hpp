@@ -7,6 +7,10 @@
 // boost
 #include <boost/log/trivial.hpp>
 
+// vulkan
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
+
 namespace lvk
 {
 
@@ -29,6 +33,16 @@ constexpr std::string_view EXT_NAME_VK_KHR_shader_non_semantic_info = "VK_KHR_sh
 enum EngineEvent
 {
     eWindowRename = 1,
+};
+
+struct FrameContext
+{
+    uint32_t frame_index;
+    const vk::raii::CommandBuffer &command_buffer;
+    const vk::raii::Framebuffer &framebuffer;
+    const vk::raii::RenderPass &render_pass;
+    const vk::raii::SwapchainKHR &swapchain;
+    vk::Extent2D extent;
 };
 
 }  // namespace lvk

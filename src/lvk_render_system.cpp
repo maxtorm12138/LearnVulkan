@@ -23,26 +23,26 @@ std::vector<lvk::Shader> RenderSystem::LoadShaders(const lvk::Hardware &hardware
     return std::move(shaders);
 }
 
-void RenderSystem::RenderObjects(const vk::raii::CommandBuffer &command_buffer, std::vector<lvk::GameObject> &objects)
+void RenderSystem::RenderObjects(const FrameContext &context, std::vector<lvk::GameObject> &objects)
 {
-    pipeline_.BindPipeline(command_buffer);
+    pipeline_.BindPipeline(context.command_buffer);
+
     for (auto &object : objects) {
         object.SetScale({0.5f, 0.5f, 0.5f});
         auto rotation = object.GetRotation();
         rotation.y = glm::mod(rotation.y + glm::radians(-0.1f), glm::two_pi<float>());
-        rotation.x = glm::mod(rotation.x + glm::radians(-0.1f), glm::two_pi<float>());
         object.SetRotation(rotation);
 
         MVP mvp
         {
             .model = object.ModelMatrix(),
-            .view = glm::mat4(1.f),
-            .projection = glm::mat4(1.f)
+            .view = glm::lookAt(glm::vec3{0.f, 0.f, 2.f}, glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, -1.f, 0.f}),
+            .projection = glm::perspective(glm::radians(41.f), context.extent.width / (float)context.extent.height, 0.1f, 5.f)
         };
 
-        command_buffer.pushConstants<MVP>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, mvp);
-        object.GetModel()->BindBuffer(command_buffer);
-        object.GetModel()->Draw(command_buffer);
+        context.command_buffer.pushConstants<MVP>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, mvp);
+        object.GetModel()->BindBuffer(context.command_buffer);
+        object.GetModel()->Draw(context.command_buffer);
     }
 }
 

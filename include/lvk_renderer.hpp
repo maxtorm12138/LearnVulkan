@@ -2,6 +2,7 @@
 #define _LVK_RENDERER_H
 
 // module
+#include "lvk_definitions.hpp"
 #include "lvk_swapchain.hpp"
 
 // boost
@@ -24,15 +25,6 @@ class Surface;
 class Renderer : public boost::noncopyable
 {
 public:
-    struct FrameContext
-    {
-        uint32_t frame_index;
-        const vk::raii::CommandBuffer &command_buffer;
-        const vk::raii::Framebuffer &framebuffer;
-        const vk::raii::RenderPass &render_pass;
-        const vk::raii::SwapchainKHR &swapchain;
-        vk::Extent2D extent;
-    };
 
     Renderer(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window);
     Renderer(Renderer &&other) noexcept;

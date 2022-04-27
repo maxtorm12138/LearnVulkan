@@ -19,7 +19,7 @@ class Shader : public boost::noncopyable
 public:
     Shader(
         const lvk::Hardware &hardware,
-        std::string_view shader_name,
+        std::string_view shader_entry,
         std::string_view shader_path,
         vk::ShaderStageFlagBits shader_stage);
 

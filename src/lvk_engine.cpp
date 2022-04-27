@@ -32,25 +32,31 @@
 
 
 
-namespace lvk
-{
-namespace detail
+namespace lvk::detail
 {
 
 class EngineImpl
 {
 public:
-    EngineImpl();
+    EngineImpl() :
+        sdl_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
+        window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN),
+        instance_(context_, window_),
+        surface_(instance_, window_),
+        hardware_(instance_, surface_),
+        gpu_allocator_(instance_, hardware_),
+        renderer_(hardware_, surface_, window_),
+        command_pool_(ConstructCommandPool(hardware_)),
+        engine_event_(SDL_RegisterEvents(1))
+    {}
+
     void Run();
 
 private:
     void LoadGameObjects();
-
     void RunRender();
-    void DrawFrame(const Renderer::FrameContext &context);
+    void DrawFrame(lvk::RenderSystem &render_system, const FrameContext &context);
 
-private:
-    std::vector<const char *> GetWindowExtensions() const;
     vk::raii::CommandPool ConstructCommandPool(const lvk::Hardware &hardware)
     {
         vk::CommandPoolCreateInfo command_pool_create_info
@@ -72,7 +78,6 @@ private:
     lvk::Renderer renderer_;
     vk::raii::CommandPool command_pool_;
     std::vector<lvk::GameObject> game_objects_;
-    lvk::RenderSystem render_system_;
     uint32_t engine_event_;
     std::atomic<bool> quit_{false};
 };
@@ -80,20 +85,6 @@ private:
 void EngineImplDeleter::operator()(EngineImpl *ptr)
 {
     delete ptr;
-}
-
-EngineImpl::EngineImpl() :
-    sdl_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
-    window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN),
-    instance_(context_, window_),
-    surface_(instance_, window_),
-    hardware_(instance_, surface_),
-    gpu_allocator_(instance_, hardware_),
-    renderer_(hardware_, surface_, window_),
-    command_pool_(ConstructCommandPool(hardware_)),
-    render_system_(hardware_, renderer_.GetRenderPass()),
-    engine_event_(SDL_RegisterEvents(1))
-{
 }
 
 void EngineImpl::Run()
@@ -188,15 +179,16 @@ void EngineImpl::LoadGameObjects()
 
 void EngineImpl::RunRender()
 {
+    lvk::RenderSystem render_system(hardware_, renderer_.GetRenderPass());
     while(!quit_)
     {
         using namespace std::placeholders;
-        renderer_.DrawFrame(std::bind(&EngineImpl::DrawFrame, this, _1));
+        renderer_.DrawFrame(std::bind(&EngineImpl::DrawFrame, this, std::ref(render_system), _1));
     }
     hardware_.GetDevice().waitIdle();
 }
 
-void EngineImpl::DrawFrame(const Renderer::FrameContext &context)
+void EngineImpl::DrawFrame(lvk::RenderSystem &render_system, const FrameContext &context)
 {
     context.command_buffer.reset();
     context.command_buffer.begin({});
@@ -245,17 +237,17 @@ void EngineImpl::DrawFrame(const Renderer::FrameContext &context)
 
     context.command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
 
-    render_system_.RenderObjects(context.command_buffer, game_objects_);
+    render_system.RenderObjects(context, game_objects_);
 
     context.command_buffer.endRenderPass();
 
     context.command_buffer.end();
 
 }
-
-
 }
 
+namespace lvk
+{
 Engine::Engine() : impl_(new detail::EngineImpl)
 {
     static auto last_frame_time = std::chrono::high_resolution_clock::now();
@@ -265,6 +257,4 @@ void Engine::Run()
 {
     return impl_->Run();
 }
-
-
 }
