@@ -47,13 +47,19 @@ private:
     void LoadGameObjects();
 
     void RunRender();
-    void DrawFrame(
-        const vk::raii::CommandBuffer &command_buffer,
-        const vk::raii::Framebuffer &framebuffer,
-        const lvk::Swapchain &swapchain);
+    void DrawFrame(const Renderer::FrameContext &context);
 
 private:
     std::vector<const char *> GetWindowExtensions() const;
+    vk::raii::CommandPool ConstructCommandPool(const lvk::Hardware &hardware)
+    {
+        vk::CommandPoolCreateInfo command_pool_create_info
+        {
+            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer, 
+            .queueFamilyIndex = hardware.GetQueueIndex(Hardware::QueueType::GRAPHICS).value(),
+        };
+        return vk::raii::CommandPool(hardware.GetDevice(), command_pool_create_info);
+    }
 
 private:
     vk::raii::Context context_;
@@ -63,12 +69,11 @@ private:
     lvk::Surface surface_;
     lvk::Hardware hardware_;
     lvk::Allocator gpu_allocator_;
-    /*
     lvk::Renderer renderer_;
+    vk::raii::CommandPool command_pool_;
     std::vector<lvk::GameObject> game_objects_;
     lvk::RenderSystem render_system_;
     uint32_t engine_event_;
-    */
     std::atomic<bool> quit_{false};
 };
 
@@ -83,16 +88,11 @@ EngineImpl::EngineImpl() :
     instance_(context_, window_),
     surface_(instance_, window_),
     hardware_(instance_, surface_),
-    gpu_allocator_(instance_, hardware_)
-    /*
-    renderer_(device_),
-    render_system_(device_, renderer_.GetRenderPass()),
+    gpu_allocator_(instance_, hardware_),
+    renderer_(hardware_, surface_, window_),
+    command_pool_(ConstructCommandPool(hardware_)),
+    render_system_(hardware_, renderer_.GetRenderPass()),
     engine_event_(SDL_RegisterEvents(1))
-    */
-{
-}
-
-std::vector<const char *> EngineImpl::GetWindowExtensions() const
 {
 }
 
@@ -113,7 +113,6 @@ void EngineImpl::Run()
         }
         else if(event.type == SDL_WINDOWEVENT)
         {
-            renderer_.NotifyWindowEvent(&event);
         }
         else if (event.type == engine_event_)
         {
@@ -184,7 +183,7 @@ void EngineImpl::LoadGameObjects()
         20, 21, 22, 22, 23, 20
     };
 
-    game_objects_.emplace_back(MakeGameObject(std::make_shared<lvk::Model>(Model::FromIndex(device_, gpu_allocator_, cube_vertices, cube_indices))));
+    game_objects_.emplace_back(MakeGameObject(std::make_shared<lvk::Model>(Model::FromIndex(hardware_, gpu_allocator_, command_pool_, cube_vertices, cube_indices))));
 }
 
 void EngineImpl::RunRender()
@@ -192,21 +191,18 @@ void EngineImpl::RunRender()
     while(!quit_)
     {
         using namespace std::placeholders;
-        renderer_.DrawFrame(std::bind(&EngineImpl::DrawFrame, this, _1, _2, _3));
+        renderer_.DrawFrame(std::bind(&EngineImpl::DrawFrame, this, _1));
     }
-    device_.GetDevice().waitIdle();
+    hardware_.GetDevice().waitIdle();
 }
 
-void EngineImpl::DrawFrame(
-    const vk::raii::CommandBuffer &command_buffer,
-    const vk::raii::Framebuffer &framebuffer,
-    const lvk::Swapchain &swapchain)
+void EngineImpl::DrawFrame(const Renderer::FrameContext &context)
 {
-    command_buffer.reset();
-    command_buffer.begin({});
+    context.command_buffer.reset();
+    context.command_buffer.begin({});
 
-    auto window_extent = swapchain.GetExtent();
-    auto &render_pass = swapchain.GetRenderPass();
+    auto window_extent = context.extent;
+    auto &render_pass = context.render_pass;
     // set viewport
     vk::Viewport viewport
     {
@@ -218,7 +214,7 @@ void EngineImpl::DrawFrame(
         .maxDepth = 1.0f
     };
     vk::ArrayProxy<const vk::Viewport> viewports(viewport);
-    command_buffer.setViewport(0, viewports);
+    context.command_buffer.setViewport(0, viewports);
 
     // set scissor
     vk::Rect2D scissor
@@ -228,7 +224,7 @@ void EngineImpl::DrawFrame(
     };
 
     vk::ArrayProxy<const vk::Rect2D> scissors(scissor);
-    command_buffer.setScissor(0, scissors);
+    context.command_buffer.setScissor(0, scissors);
 
     // begin renderpass
     vk::ClearColorValue clear_color(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f});
@@ -236,8 +232,8 @@ void EngineImpl::DrawFrame(
     clear_value.color = clear_color;
     vk::RenderPassBeginInfo render_pass_begin_info
     {
-        .renderPass = *render_pass,
-        .framebuffer = *framebuffer,
+        .renderPass = *context.render_pass,
+        .framebuffer = *context.framebuffer,
         .renderArea
         {
             .offset = {0, 0},
@@ -247,13 +243,13 @@ void EngineImpl::DrawFrame(
         .pClearValues = &clear_value
     };
 
-    command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
+    context.command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
 
-    render_system_.RenderObjects(command_buffer, game_objects_);
+    render_system_.RenderObjects(context.command_buffer, game_objects_);
 
-    command_buffer.endRenderPass();
+    context.command_buffer.endRenderPass();
 
-    command_buffer.end();
+    context.command_buffer.end();
 
 }
 

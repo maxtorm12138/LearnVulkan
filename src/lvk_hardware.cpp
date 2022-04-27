@@ -100,6 +100,7 @@ vk::raii::Device Hardware::ConstructDevice() const
     
     std::vector<const char *> enable_extensions;
     std::transform(required_extensions.begin(), required_extensions.end(), std::back_inserter(enable_extensions), [](auto &&ext){ return ext.c_str(); });
+    std::transform(optional_extensions.begin(), optional_extensions.end(), std::back_inserter(enable_extensions), [](auto &&ext){ return ext.c_str(); });
 
     auto queue_families = physical_device_.getQueueFamilyProperties();
     std::vector<vk::DeviceQueueCreateInfo> device_queue_create_infos;

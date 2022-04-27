@@ -18,8 +18,8 @@ RenderSystem::RenderSystem(const lvk::Hardware &hardware, const vk::raii::Render
 std::vector<lvk::Shader> RenderSystem::LoadShaders(const lvk::Hardware &hardware)
 {
     std::vector<lvk::Shader> shaders;
-    shaders.emplace_back(hardware, "naive", "shaders/naive/naive.vert.spv", vk::ShaderStageFlagBits::eVertex);
-    shaders.emplace_back(hardware, "naive", "shaders/naive/naive.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    shaders.emplace_back(hardware, "main", "shaders/naive/naive.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    shaders.emplace_back(hardware, "main", "shaders/naive/naive.frag.spv", vk::ShaderStageFlagBits::eFragment);
     return std::move(shaders);
 }
 

@@ -4,7 +4,7 @@ layout(location = 0) in vec3 in_posision;
 layout(location = 1) in vec3 in_color;
 layout(location = 0) out vec3 frag_color;
 
-layout(binding = 0) uniform MVPUBO
+layout(push_constant) uniform MVPUBO
 {
     mat4 model;
     mat4 view;

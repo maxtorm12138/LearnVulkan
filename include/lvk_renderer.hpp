@@ -31,6 +31,7 @@ public:
         const vk::raii::Framebuffer &framebuffer;
         const vk::raii::RenderPass &render_pass;
         const vk::raii::SwapchainKHR &swapchain;
+        vk::Extent2D extent;
     };
 
     Renderer(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window);
@@ -41,6 +42,7 @@ public:
 
 public:
     uint64_t GetFrameCounter() const { return frame_counter_; }
+    const vk::raii::RenderPass &GetRenderPass() const { return swapchain_.GetRenderPass(); }
 
 private:
     vk::raii::CommandPool ConstructCommandPool(const lvk::Hardware &hardware);
