@@ -4,8 +4,9 @@ project(LearnVulkan VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# include sdl2pp
-find_package(SDL2PP REQUIRED)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
+# include sdl2
+find_package(SDL2 REQUIRED)
 
 # include glm
 list(APPEND CMAKE_PREFIX_PATH third_party/glm/cmake)
@@ -55,9 +56,9 @@ add_library(lvk ${LVK_SRCS})
 target_add_shader(lvk naive/naive.frag)
 target_add_shader(lvk naive/naive.vert)
 target_compile_definitions(lvk PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVULKAN_HPP_NO_SPACESHIP_OPERATOR -DGLM_FORCE_RADIANS -DGLM_FORCE_DEPTH_ZERO_TO_ONE)
-target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} ${SDL2PP_INCLUDE_DIRS} include/)
-target_link_libraries(lvk PRIVATE ${SDL2PP_LIBRARIES} vma stb Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
+target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} include/)
+target_link_libraries(lvk PRIVATE SDL2::Main vma stb Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
 
 add_executable(engine src/main.cpp)
 target_include_directories(engine PRIVATE include/)
-target_link_libraries(engine PRIVATE lvk Boost::log)
+target_link_libraries(engine PRIVATE lvk Boost::log ${SDL2PP_LIBRARIES})

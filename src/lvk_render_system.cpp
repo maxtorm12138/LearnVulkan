@@ -39,7 +39,7 @@ void RenderSystem::RenderObjects(const FrameContext &context, std::vector<lvk::G
         {
             .model = object.ModelMatrix(),
             .view = glm::lookAt(glm::vec3{0.f, 0.f, 2.f}, glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, -1.f, 0.f}),
-            .projection = glm::perspective(glm::radians(41.f), context.extent.width / (float)context.extent.height, 0.1f, 5.f)
+            .projection = glm::perspective(glm::radians(41.f), context.extent.width / (float)context.extent.height, 0.1f, 10.f)
         };
 
         context.command_buffer.pushConstants<MVP>(*pipeline_layout_, vk::ShaderStageFlagBits::eVertex, 0, mvp);
