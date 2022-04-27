@@ -29,8 +29,10 @@ void RenderSystem::RenderObjects(const FrameContext &context, std::vector<lvk::G
 
     for (auto &object : objects) {
         object.SetScale({0.5f, 0.5f, 0.5f});
+        object.SetTranslation({0.f, 0.2f, 0.f});
         auto rotation = object.GetRotation();
         rotation.y = glm::mod(rotation.y + glm::radians(-0.1f), glm::two_pi<float>());
+        rotation.x = glm::mod(rotation.x + glm::radians(-0.1f), glm::two_pi<float>());
         object.SetRotation(rotation);
 
         MVP mvp
