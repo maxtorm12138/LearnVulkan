@@ -31,6 +31,7 @@ public:
     SDLWindow(std::string_view title, int x, int y, int w, int h, uint32_t flags);
     ~SDLWindow();
 
+    void Show();
     std::vector<const char *> GetVulkanInstanceExtensions() const;
     std::pair<int, int> GetVulkanDrawableSize() const;
     vk::raii::SurfaceKHR CreateVulkanSurface(const vk::raii::Instance &instance) const;

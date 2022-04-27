@@ -76,4 +76,10 @@ vk::raii::SurfaceKHR SDLWindow::CreateVulkanSurface(const vk::raii::Instance &in
     }
     return vk::raii::SurfaceKHR(instance, surface);
 }
+
+
+void SDLWindow::Show()
+{
+    SDL_ShowWindow(window_);
+}
 }

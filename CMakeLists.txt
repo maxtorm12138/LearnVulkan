@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 # include sdl2
 find_package(SDL2 REQUIRED)
+message("SDL libraries ${SDL2_LIBRARIES}")
 
 # include glm
 list(APPEND CMAKE_PREFIX_PATH third_party/glm/cmake)

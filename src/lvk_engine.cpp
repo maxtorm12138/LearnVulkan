@@ -105,11 +105,6 @@ void EngineImpl::Run()
         }
         else if (event.type == engine_event_)
         {
-            if (event.user.code == EngineEvent::eWindowRename) 
-            {
-                window_.SetTitle(*static_cast<std::string *>(event.user.data1));
-                delete static_cast<std::string *>(event.user.data1);
-            }
         }
     }
     render_thread.join();
