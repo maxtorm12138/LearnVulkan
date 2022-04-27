@@ -8,18 +8,15 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
-namespace SDL2pp
-{
-class Window;    
-}
-
 namespace lvk
 {
+
+class SDLWindow;
 
 class Instance : public boost::noncopyable
 {
 public:
-    Instance(const vk::raii::Context &context, const SDL2pp::Window &window);
+    Instance(const vk::raii::Context &context, const lvk::SDLWindow &window);
     Instance(Instance &&other) noexcept;
     Instance &operator=(Instance &&other) noexcept;
 
@@ -31,7 +28,7 @@ public:
 
     uint32_t GetApiVersion() const { return api_version_; }
 private:
-    vk::raii::Instance ConstructInstance(const vk::raii::Context &context, const SDL2pp::Window &window);
+    vk::raii::Instance ConstructInstance(const vk::raii::Context &context, const lvk::SDLWindow &window);
 
 private:
     uint32_t api_version_ = VK_API_VERSION_1_1;

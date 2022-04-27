@@ -3,9 +3,7 @@
 // module
 #include "lvk_hardware.hpp"
 #include "lvk_surface.hpp"
-
-// SDL2
-#include <SDL2pp/SDL2pp.hh>
+#include "lvk_sdl.hpp"
 
 // fmt
 #include <fmt/format.h>
@@ -15,7 +13,7 @@
 namespace lvk
 {
 
-Renderer::Renderer(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window) :
+Renderer::Renderer(const lvk::Hardware &hardware, const lvk::Surface &surface, const lvk::SDLWindow &window) :
     hardware_(&hardware),
     swapchain_(hardware, surface, window),
     command_pool_(ConstructCommandPool(hardware)),

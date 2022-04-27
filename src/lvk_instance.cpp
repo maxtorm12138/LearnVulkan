@@ -2,10 +2,7 @@
 
 // module
 #include "lvk_definitions.hpp"
-
-// SDL2
-#include <SDL2pp/SDL2pp.hh>
-#include <SDL_vulkan.h>
+#include "lvk_sdl.hpp"
 
 // std
 #include <unordered_set>
@@ -31,7 +28,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBits
     return VK_FALSE;
 }
 
-Instance::Instance(const vk::raii::Context &context, const SDL2pp::Window &window) :
+Instance::Instance(const vk::raii::Context &context, const lvk::SDLWindow &window) :
     instance_(ConstructInstance(context, window))
     #ifndef NDEBUG
     ,debug_messenger_(instance_, {.messageSeverity = ENABLE_MESSAGE_SEVERITY, .messageType = ENABLE_MESSAGE_TYPE, .pfnUserCallback = &DebugCallback})
@@ -55,7 +52,7 @@ Instance &Instance::operator=(Instance &&other) noexcept
     return *this;
 }
 
-vk::raii::Instance Instance::ConstructInstance(const vk::raii::Context &context, const SDL2pp::Window &window)
+vk::raii::Instance Instance::ConstructInstance(const vk::raii::Context &context, const lvk::SDLWindow &window)
 {
     #ifndef NDEBUG
     std::vector<const char *> REQUIRED_LAYERS{ LAYER_NAME_VK_LAYER_KHRONOS_validation.data() };
@@ -68,18 +65,7 @@ vk::raii::Instance Instance::ConstructInstance(const vk::raii::Context &context,
     std::unordered_set<std::string_view> OPTIONAL_LAYERS {};
     std::unordered_set<std::string_view> OPTIONAL_EXTENSIONS{ EXT_NAME_VK_KHR_get_physical_device_properties2.data() };
 
-    std::vector<const char *> window_extensions;
-    unsigned int ext_ct{0};
-    if (SDL_Vulkan_GetInstanceExtensions(window.Get(), &ext_ct, nullptr) != SDL_TRUE)
-    {
-        throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
-    }
-
-    window_extensions.resize(ext_ct);
-    if (SDL_Vulkan_GetInstanceExtensions(window.Get(), &ext_ct, window_extensions.data()) != SDL_TRUE)
-    {
-        throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
-    }
+    auto window_extensions = window.GetVulkanInstanceExtensions();
 
     std::copy(window_extensions.begin(), window_extensions.end(), std::inserter(REQUIRED_EXTENSIONS, REQUIRED_EXTENSIONS.end()));
 

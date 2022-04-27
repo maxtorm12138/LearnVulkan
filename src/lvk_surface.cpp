@@ -2,10 +2,7 @@
 
 // module
 #include "lvk_instance.hpp"
-
-// SDL2
-#include <SDL2pp/SDL2pp.hh>
-#include <SDL_vulkan.h>
+#include "lvk_sdl.hpp"
 
 // fmt
 #include <fmt/format.h>
@@ -13,18 +10,9 @@
 namespace lvk
 {
 
-Surface::Surface(const lvk::Instance &instance, const SDL2pp::Window &window) : surface_(ConstructSurface(instance, window))
+Surface::Surface(const lvk::Instance &instance, const lvk::SDLWindow &window) : surface_(window.CreateVulkanSurface(instance))
 {
 }
 
-vk::raii::SurfaceKHR Surface::ConstructSurface(const lvk::Instance &instance, const SDL2pp::Window &window)
-{
-    VkSurfaceKHR surface;
-    if (!SDL_Vulkan_CreateSurface(window.Get(), **instance, &surface))
-    {
-        throw std::runtime_error(fmt::format("SDL_Vulkan_CreateSurface fail description: {}", SDL_GetError()));
-    }
-    return vk::raii::SurfaceKHR(*instance, surface);
-}
 
 }

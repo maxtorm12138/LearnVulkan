@@ -40,4 +40,40 @@ SDLWindow::~SDLWindow()
     }
 }
 
+std::vector<const char *> SDLWindow::GetVulkanInstanceExtensions() const
+{
+    std::vector<const char *> window_extensions;
+    unsigned int ext_ct{0};
+    if (SDL_Vulkan_GetInstanceExtensions(window_, &ext_ct, nullptr) != SDL_TRUE)
+    {
+        throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
+    }
+
+    window_extensions.resize(ext_ct);
+    if (SDL_Vulkan_GetInstanceExtensions(window_, &ext_ct, window_extensions.data()) != SDL_TRUE)
+    {
+        throw std::runtime_error(fmt::format("SDL_Vulkan_GetInstanceExtensions fail description: {}", SDL_GetError()));
+    }
+
+    return window_extensions;
+}
+
+
+std::pair<int, int> SDLWindow::GetVulkanDrawableSize() const
+{
+    int w,h;
+    SDL_Vulkan_GetDrawableSize(window_, &w, &h);
+    return std::make_pair(w, h);
+}
+
+
+vk::raii::SurfaceKHR SDLWindow::CreateVulkanSurface(const vk::raii::Instance &instance) const
+{
+    VkSurfaceKHR surface;
+    if (!SDL_Vulkan_CreateSurface(window_, *instance, &surface))
+    {
+        throw std::runtime_error(fmt::format("SDL_Vulkan_CreateSurface fail description: {}", SDL_GetError()));
+    }
+    return vk::raii::SurfaceKHR(instance, surface);
+}
 }

@@ -3,14 +3,11 @@
 // module
 #include "lvk_hardware.hpp"
 #include "lvk_surface.hpp"
-
-// sdl2
-#include <SDL_vulkan.h>
-#include <SDL2pp/SDL2pp.hh>
+#include "lvk_sdl.hpp"
 
 namespace lvk
 {
-Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window) :
+Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const lvk::SDLWindow &window) :
     present_mode_(PickPresentMode(hardware, surface)),
     surface_format_(PickSurfaceFormat(hardware, surface)),
     extent_(PickExtent(hardware, surface, window)),
@@ -20,7 +17,7 @@ Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface,
     frame_buffers_(ConstructFramebuffers(hardware))
 {}
 
-Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window, Swapchain previos) :
+Swapchain::Swapchain(const lvk::Hardware &hardware, const lvk::Surface &surface, const lvk::SDLWindow &window, Swapchain previos) :
     present_mode_(PickPresentMode(hardware, surface)),
     surface_format_(PickSurfaceFormat(hardware, surface)),
     extent_(PickExtent(hardware, surface, window)),
@@ -67,7 +64,7 @@ vk::SurfaceFormatKHR Swapchain::PickSurfaceFormat(const lvk::Hardware &hardware,
     return surface_formats[0];
 }
 
-vk::Extent2D Swapchain::PickExtent(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window)
+vk::Extent2D Swapchain::PickExtent(const lvk::Hardware &hardware, const lvk::Surface &surface, const lvk::SDLWindow &window)
 {
     auto surface_capabilities = hardware.GetPhysicalDevice().getSurfaceCapabilitiesKHR(**surface);
     vk::Extent2D extent;
@@ -77,9 +74,7 @@ vk::Extent2D Swapchain::PickExtent(const lvk::Hardware &hardware, const lvk::Sur
     }
     else
     {
-        int w,h;
-        SDL_Vulkan_GetDrawableSize(window.Get(), &w, &h);
-
+        auto [w, h] = window.GetVulkanDrawableSize();
         extent.width = std::clamp(static_cast<uint32_t>(w), surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
         extent.height = std::clamp(static_cast<uint32_t>(h), surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
     }

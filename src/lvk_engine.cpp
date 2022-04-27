@@ -10,6 +10,7 @@
 #include "lvk_renderer.hpp"
 #include "lvk_game_object.hpp"
 #include "lvk_render_system.hpp"
+#include "lvk_sdl.hpp"
 
 // boost
 #include <boost/log/trivial.hpp>
@@ -19,9 +20,6 @@
 #include <thread>
 #include <unordered_map>
 
-// SDL
-#include <SDL_vulkan.h>
-#include <SDL2pp/SDL2pp.hh>
 
 // fmt
 #include <fmt/format.h>
@@ -39,7 +37,7 @@ class EngineImpl
 {
 public:
     EngineImpl() :
-        sdl_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
+        sdl_context_(SDL_INIT_VIDEO | SDL_INIT_AUDIO),
         window_("Vulkan Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN),
         instance_(context_, window_),
         surface_(instance_, window_),
@@ -69,8 +67,8 @@ private:
 
 private:
     vk::raii::Context context_;
-    SDL2pp::SDL sdl_;
-    SDL2pp::Window window_;
+    lvk::SDLContext sdl_context_;
+    lvk::SDLWindow window_;
     lvk::Instance instance_;
     lvk::Surface surface_;
     lvk::Hardware hardware_;

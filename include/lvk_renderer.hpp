@@ -12,21 +12,17 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
-namespace SDL2pp
-{
-class Window;
-}
-
 namespace lvk
 {
 class Hardware;
 class Surface;
+class SDLWindow;
 
 class Renderer : public boost::noncopyable
 {
 public:
 
-    Renderer(const lvk::Hardware &hardware, const lvk::Surface &surface, const SDL2pp::Window &window);
+    Renderer(const lvk::Hardware &hardware, const lvk::Surface &surface, const lvk::SDLWindow &window);
     Renderer(Renderer &&other) noexcept;
     
     using RecordCommandBufferCallback = std::function<void(const FrameContext &context)>;
