@@ -163,7 +163,7 @@ void EngineImpl::LoadGameObjects()
         // near
         0, 1, 2, 2, 3, 0,
         // far
-        4, 5, 6, 6, 7, 5,
+        4, 5, 6, 6, 7, 4,
         // top
         8, 9, 10, 10, 11, 8,
         //bottom
