@@ -30,6 +30,8 @@ constexpr std::string_view EXT_NAME_VK_KHR_swapchain = "VK_KHR_swapchain";
 
 constexpr std::string_view EXT_NAME_VK_KHR_shader_non_semantic_info = "VK_KHR_shader_non_semantic_info";
 
+constexpr std::string_view EXT_NAME_VK_KHR_portability_enumeration = "VK_KHR_portability_enumeration";
+
 enum EngineEvent
 {
     eWindowRename = 1,

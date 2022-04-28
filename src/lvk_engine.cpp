@@ -95,7 +95,7 @@ void EngineImpl::Run()
     SDL_Event event;
     while (!quit_)
     {
-        SDL_WaitEvent(&event);
+        sdl_context_.WaitEvent(event);
         if (event.type == SDL_QUIT)
         {
             quit_ = true;

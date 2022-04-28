@@ -23,6 +23,7 @@ class SDLContext : public boost::noncopyable
 public:
     SDLContext(uint32_t init_flags);
     ~SDLContext();
+    void WaitEvent(SDL_Event &event);
 };
 
 class SDLWindow : public boost::noncopyable

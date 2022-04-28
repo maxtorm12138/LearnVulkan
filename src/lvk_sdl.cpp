@@ -22,6 +22,14 @@ SDLContext::~SDLContext()
     SDL_Quit();
 }
 
+void SDLContext::WaitEvent(SDL_Event &event)
+{
+    if (SDL_WaitEvent(&event) == 0)
+    {
+        throw std::runtime_error(fmt::format("SDL_WaitEvent fail {}", SDL_GetError()));
+    }
+}
+
 SDLWindow::SDLWindow(std::string_view title, int x, int y, int w, int h, uint32_t flags)
 {
     window_ = SDL_CreateWindow(title.data(), x, y, w, h, flags);

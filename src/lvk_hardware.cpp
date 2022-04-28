@@ -11,7 +11,7 @@ namespace lvk
 {
 
 const std::vector<std::string_view> REQUIRED_DEVICE_EXTENSION { EXT_NAME_VK_KHR_swapchain };
-const std::vector<std::string_view> OPTIONAL_DEVICE_EXTENSION { EXT_NAME_VK_KHR_portability_subset };
+const std::vector<std::string_view> OPTIONAL_DEVICE_EXTENSION { EXT_NAME_VK_KHR_portability_subset, EXT_NAME_VK_KHR_portability_enumeration };
 
 Hardware::Hardware(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface) :
     physical_device_(ConstructPhysicalDevice(instance, surface)),
