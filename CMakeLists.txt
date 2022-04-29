@@ -21,7 +21,7 @@ add_subdirectory("third_party/vulkan")
 # include sdl2
 set(SDL2_BUILDING_LIBRARY ON)
 find_package(SDL2 REQUIRED)
-if (MSVC)
+if ((MSVC OR Clang) AND WIN32)
     get_filename_component(SDL2_LIBRARY_PATH ${SDL2_LIBRARIES} DIRECTORY)
     find_file(SDL2_DYNAMIC_LIBRARIES NAMES "SDL2.dll" PATHS ${SDL2_LIBRARY_PATH} REQUIRED)
     file(COPY ${SDL2_DYNAMIC_LIBRARIES} DESTINATION ${CMAKE_BINARY_DIR})
