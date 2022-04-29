@@ -63,7 +63,7 @@ vk::raii::Instance Instance::ConstructInstance(const vk::raii::Context &context,
     #endif
 
     std::unordered_set<std::string_view> OPTIONAL_LAYERS {};
-    std::unordered_set<std::string_view> OPTIONAL_EXTENSIONS{ EXT_NAME_VK_KHR_get_physical_device_properties2.data() };
+    std::unordered_set<std::string_view> OPTIONAL_EXTENSIONS{ EXT_NAME_VK_KHR_get_physical_device_properties2.data(), EXT_NAME_VK_KHR_portability_enumeration.data() };
 
     auto window_extensions = window.GetVulkanInstanceExtensions();
 
@@ -97,6 +97,7 @@ vk::raii::Instance Instance::ConstructInstance(const vk::raii::Context &context,
     {
         vk::InstanceCreateInfo
         {
+            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
             .pApplicationInfo = &application_info,
             .enabledLayerCount = static_cast<uint32_t>(enable_layers.size()),
             .ppEnabledLayerNames = enable_layers.data(),
