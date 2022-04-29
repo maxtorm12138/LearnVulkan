@@ -2,7 +2,7 @@
 
 // module
 #include "lvk_definitions.hpp"
-#include "lvk_sdl.hpp"
+#include "sdl2pp/sdl2pp.hpp"
 
 // std
 #include <unordered_set>

@@ -10,7 +10,7 @@
 #include "lvk_renderer.hpp"
 #include "lvk_game_object.hpp"
 #include "lvk_render_system.hpp"
-#include "lvk_sdl.hpp"
+#include "sdl2pp/sdl2pp.hpp"
 
 // boost
 #include <boost/log/trivial.hpp>

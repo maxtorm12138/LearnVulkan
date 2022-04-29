@@ -3,7 +3,7 @@
 // module
 #include "lvk_hardware.hpp"
 #include "lvk_surface.hpp"
-#include "lvk_sdl.hpp"
+#include "sdl2pp/sdl2pp.hpp"
 
 namespace lvk
 {

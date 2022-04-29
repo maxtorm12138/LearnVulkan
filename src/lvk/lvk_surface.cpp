@@ -2,7 +2,7 @@
 
 // module
 #include "lvk_instance.hpp"
-#include "lvk_sdl.hpp"
+#include "sdl2pp/sdl2pp.hpp"
 
 // fmt
 #include <fmt/format.h>

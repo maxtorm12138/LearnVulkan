@@ -5,7 +5,7 @@
 #include <boost/noncopyable.hpp>
 
 // vulkan
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
 namespace lvk

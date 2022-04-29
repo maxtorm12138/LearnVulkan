@@ -1,4 +1,8 @@
-#include "lvk_sdl.hpp"
+#include "sdl2pp.hpp"
+
+// SDL2
+#include <SDL.h>
+#include <SDL_vulkan.h>
 
 // fmt
 #include <fmt/format.h>

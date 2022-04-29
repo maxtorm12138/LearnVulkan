@@ -13,7 +13,6 @@
 // vulkan
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
-#include <vma/vk_mem_alloc.h>
 
 
 namespace SDL2pp

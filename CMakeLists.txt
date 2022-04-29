@@ -4,24 +4,32 @@ project(LearnVulkan VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+    set(BUILD_SHARED_LIBS TRUE)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
+
+# third party sources
+add_subdirectory("third_party/vma")
+add_subdirectory("third_party/glm")
+add_subdirectory("third_party/fmt")
+add_subdirectory("third_party/stb")
+add_subdirectory("third_party/vulkan")
+
 # include sdl2
+set(SDL2_BUILDING_LIBRARY ON)
 find_package(SDL2 REQUIRED)
-message("SDL libraries ${SDL2_LIBRARIES}")
-
-# include glm
-list(APPEND CMAKE_PREFIX_PATH third_party/glm/cmake)
-find_package(glm REQUIRED FATAL_ERROR)
-
-# include vulkan
-find_package(Vulkan REQUIRED FATAL_ERROR)
-message("Vulkan: ${Vulkan_INCLUDE_DIRS}")
+message("SDL2 ${SDL2_LIBRARIES}")
 
 # include boost
 find_package(Boost REQUIRED COMPONENTS log)
 
-# fmt lib
-add_subdirectory("third_party/fmt")
+# sdl2 cpp wrapper
+add_library(sdl2pp STATIC src/sdl2pp/sdl2pp.hpp src/sdl2pp/sdl2pp.cpp)
+target_link_libraries(sdl2pp PUBLIC SDL2::Core vulkan::vulkancpp)
+target_link_libraries(sdl2pp PRIVATE Boost::boost fmt::fmt-header-only)
 
 # shader compiler
 function(target_add_shader TARGET SHADER)
@@ -41,25 +49,17 @@ function(target_add_shader TARGET SHADER)
     target_sources(${TARGET} PRIVATE ${CURRENT_OUTPUT_PATH})
 endfunction(target_add_shader TARGET SHADER)
 
-add_library(vma SHARED include/vma/vk_mem_alloc.h src/vma/vk_mem_alloc.cpp)
-target_include_directories(vma PRIVATE ${Vulkan_INCLUDE_DIRS} include/)
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(vma PRIVATE -Wno-nullability-completeness)
-endif ()
-target_link_libraries(vma PRIVATE Vulkan::Vulkan)
-
-add_library(stb SHARED include/stb/stb_image.h src/stb/stb_image.cpp)
-target_include_directories(stb PRIVATE include/)
-
-file(GLOB LVK_SRCS include/lvk_*.hpp src/lvk_*.cpp)
+file(GLOB LVK_SRCS src/lvk/lvk_*.hpp src/lvk/lvk_*.cpp)
 add_library(lvk SHARED ${LVK_SRCS})
 target_add_shader(lvk naive/naive.frag)
 target_add_shader(lvk naive/naive.vert)
 target_compile_definitions(lvk PRIVATE -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS -DVULKAN_HPP_NO_SPACESHIP_OPERATOR -DGLM_FORCE_RADIANS -DGLM_FORCE_DEPTH_ZERO_TO_ONE)
-target_include_directories(lvk PRIVATE ${Vulkan_INCLUDE_DIRS} include/)
-target_link_libraries(lvk PRIVATE SDL2::Core vma stb Vulkan::Vulkan glm::glm Boost::log Boost::boost fmt::fmt-header-only)
+target_include_directories(lvk PRIVATE src/)
+target_link_libraries(lvk PRIVATE vma::vma vulkan::vulkancpp sdl2pp glm::glm Boost::log Boost::boost fmt::fmt-header-only)
+
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/vk_layer_settings.txt DESTINATION ${CMAKE_BINARY_DIR})
 add_executable(engine src/main.cpp)
-target_include_directories(engine PRIVATE include/)
-target_link_libraries(engine PRIVATE lvk Boost::log ${SDL2PP_LIBRARIES})
+target_include_directories(engine PRIVATE src/)
+target_link_libraries(engine lvk)
+target_link_libraries(engine Boost::log)

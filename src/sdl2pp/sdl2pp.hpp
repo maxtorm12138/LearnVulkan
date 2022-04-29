@@ -1,9 +1,8 @@
-#ifndef _LVK_SDL_H
-#define _LVK_SDL_H
+#ifndef _SDL2PP_H
+#define _SDL2PP_H
 
 // SDL2
 #include <SDL.h>
-#include <SDL_vulkan.h>
 
 // std
 #include <string_view>
@@ -36,6 +35,7 @@ public:
     std::vector<const char *> GetVulkanInstanceExtensions() const;
     std::pair<int, int> GetVulkanDrawableSize() const;
     vk::raii::SurfaceKHR CreateVulkanSurface(const vk::raii::Instance &instance) const;
+
 private:
     SDL_Window *window_{nullptr};
 };
